@@ -42,7 +42,7 @@ class LoopDetectionMiddleware(Middleware):
                 iteration,
                 self.max_iterations,
             )
-            return self._terminate(output, reason=f"max iterations reached ({iteration}/{self.max_iterations})")
+            return self._terminate(output, state, reason=f"max iterations reached ({iteration}/{self.max_iterations})")
 
         # --- similarity check ---
         if previous and current_text:
@@ -55,6 +55,7 @@ class LoopDetectionMiddleware(Middleware):
                 )
                 return self._terminate(
                     output,
+                    state,
                     reason=f"output similarity {ratio:.2f} >= {self.similarity_threshold}",
                 )
 
@@ -74,10 +75,11 @@ class LoopDetectionMiddleware(Middleware):
         return str(output)
 
     @staticmethod
-    def _terminate(output: dict, *, reason: str) -> dict:
+    def _terminate(output: dict, state: dict, *, reason: str) -> dict:
         output["_loop_terminated"] = True
         output["_loop_reason"] = reason
-        # Prevent routing back into the subagent branch.
-        if output.get("route") == "subagent":
+        # Force-clear route to prevent looping back.
+        # Check BOTH output and state — route lives in state, not output.
+        if output.get("route") == "subagent" or state.get("route") == "subagent":
             output["route"] = None
         return output

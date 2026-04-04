@@ -227,6 +227,11 @@ def router_node(state: GraphState, model: Any) -> dict:
                 }
 
             elif name == "RouteProArgs":
+                # Check if pro should actually be ultra (LLM often misses parallel signals)
+                fallback = _keyword_route_fallback_4way(user_query)
+                if fallback and fallback.get("execution_mode") == "ultra":
+                    logger.info("LLM said pro but keyword detects ultra (parallel signals)")
+                    return {**fallback, "metadata": {**state.get("metadata", {}), **fallback.get("metadata", {})}}
                 return {
                     "route": route,
                     "execution_mode": execution_mode,

@@ -89,12 +89,16 @@ export function useChat() {
       });
 
       on("tool_result", (data) => {
-        if (!isCurrent()) return;
         const { name } = data as { name: string; preview: string };
-        setSteps((prev) => [
-          ...prev,
-          { id: nanoid(), type: "tool_result", content: `✅ ${name} 返回结果`, status: "completed", timestamp: Date.now() },
-        ]);
+        // Remove processing messages (search spinners) from buffer
+        buffer.messages = buffer.messages.filter((m) => m.role !== "processing");
+        if (isCurrent()) {
+          setMessages([...buffer.messages]);
+          setSteps((prev) => [
+            ...prev,
+            { id: nanoid(), type: "tool_result", content: `✅ ${name} 返回结果`, status: "completed", timestamp: Date.now() },
+          ]);
+        }
       });
 
       on("subagent_status", (data) => {
