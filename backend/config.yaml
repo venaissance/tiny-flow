@@ -1,0 +1,29 @@
+model:
+  default: "glm-4-flash-250414"
+  providers:
+    - name: openai
+      api_key_env: OPENAI_API_KEY
+    - name: claude
+      api_key_env: ANTHROPIC_API_KEY
+    - name: glm
+      api_key_env: GLM_API_KEY
+
+executor:
+  scheduler_workers: 3
+  execution_workers: 3
+  default_timeout: 300
+
+memory:
+  token_budget: 500
+  decay_days: 30
+  decay_factor: 0.8
+  min_confidence: 0.7
+  max_facts: 50
+
+skills:
+  dirs:
+    - skills/
+  hot_reload: true
+
+graph:
+  max_iterations: 3

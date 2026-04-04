@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "skills": {
+    "todo": { "enabled": true },
+    "deep-research": { "enabled": true },
+    "webpage-creation": { "enabled": true }
+  }
+}

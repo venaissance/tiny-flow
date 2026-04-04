@@ -1,0 +1,44 @@
+# ── Secrets ──
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env.local
+
+# ── Private docs (interview prep, specs, plans) ──
+docs/private/
+
+# ── Runtime data ──
+backend/data/
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.egg
+
+# ── Node.js ──
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Testing ──
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ── Misc ──
+*.log
+*.db
+tsconfig.tsbuildinfo
