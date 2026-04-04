@@ -165,8 +165,10 @@ def build_graph(
     graph.add_edge("merge", "reflector")
 
     # Reflector → END or loop back to plan
+    # Only loop if reflector explicitly sets route="needs_more_work"
+    # (default: end after one execution cycle)
     def reflector_decision(state: GraphState) -> str:
-        if state.get("route") == "subagent":
+        if state.get("route") == "needs_more_work":
             return "plan"
         return "end"
 

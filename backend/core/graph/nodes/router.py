@@ -112,21 +112,9 @@ def _keyword_route_fallback_4way(query: str) -> dict | None:
       4. Research keywords → "pro"
       5. No match → None  (caller defaults to flash)
     """
-    # --- 1. Skill keyword match → pro ---
-    from core.skills.registry import get_all_skills
-    from core.skills.router import keyword_filter
-
-    skills = get_all_skills()
-    candidates = keyword_filter(skills, query, max_candidates=1)
-    if candidates:
-        logger.info(f"Keyword fallback matched skill: {candidates[0].name}")
-        return {
-            "route": "subagent",
-            "execution_mode": "pro",
-            "metadata": {"task_description": query, "estimated_steps": 3},
-        }
-
-    # --- 2. Parallel intent → ultra ---
+    # --- 1. Parallel intent → ultra (HIGHEST PRIORITY) ---
+    # Must check BEFORE skill match, otherwise "调研" matches deep-research
+    # and returns pro before ultra check runs.
     parallel_keywords = ["分别", "各自", "并行", "同时"]
     # Heuristic: parallel keyword present AND query contains list-like structure
     # (Chinese enumeration markers or multiple verbs/items)
@@ -139,6 +127,20 @@ def _keyword_route_fallback_4way(query: str) -> dict | None:
                 "execution_mode": "ultra",
                 "metadata": {"subtasks": [query]},
             }
+
+    # --- 2. Skill keyword match → pro ---
+    from core.skills.registry import get_all_skills
+    from core.skills.router import keyword_filter
+
+    skills = get_all_skills()
+    candidates = keyword_filter(skills, query, max_candidates=1)
+    if candidates:
+        logger.info(f"Keyword fallback matched skill: {candidates[0].name}")
+        return {
+            "route": "subagent",
+            "execution_mode": "pro",
+            "metadata": {"task_description": query, "estimated_steps": 3},
+        }
 
     # --- 3. Deep reasoning keywords → thinking ---
     reasoning_keywords = ["分析", "对比", "为什么", "解释", "推理"]

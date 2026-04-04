@@ -8,6 +8,8 @@ import { MessageItem } from "@/components/chat/message-item";
 import { InputBox, type InputBoxHandle } from "@/components/chat/input-box";
 import { ThreadSidebar } from "@/components/chat/thread-sidebar";
 import { ArtifactPanel } from "@/components/chat/artifact-panel";
+import { TodoCard } from "@/components/chat/todo-card";
+import { ModeBadge } from "@/components/chat/mode-badge";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -95,7 +97,7 @@ const LAYOUT_WITH_ARTIFACT = { chat: 58, artifact: 42 };
 // ---------------------------------------------------------------------------
 
 export default function WorkspacePage() {
-  const { messages, isStreaming, steps, send, clearMessages, switchToThread } =
+  const { messages, isStreaming, steps, send, clearMessages, switchToThread, disconnect, todos, executionMode } =
     useChat();
   const {
     threads,
@@ -318,7 +320,22 @@ export default function WorkspacePage() {
                         />
                       </div>
                     ))}
-                    {isStreaming && <StepTimeline steps={steps} />}
+                    {/* Mode badge + TODO card */}
+                    {executionMode && <ModeBadge mode={executionMode} />}
+                    {todos.length > 0 && <TodoCard todos={todos} />}
+
+                    {/* Step timeline: live during streaming, collapsible after */}
+                    {isStreaming && steps.length > 0 && <StepTimeline steps={steps} />}
+                    {!isStreaming && steps.length > 0 && (
+                      <details className="mb-4 ml-10 rounded-lg border border-gray-200/60 dark:border-gray-700/40">
+                        <summary className="cursor-pointer px-3 py-2 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                          🔍 推理过程 ({steps.length} 步)
+                        </summary>
+                        <div className="border-t border-gray-100 dark:border-gray-800">
+                          <StepTimeline steps={steps} />
+                        </div>
+                      </details>
+                    )}
                   </div>
                 )}
               </div>
@@ -336,7 +353,7 @@ export default function WorkspacePage() {
 
             {/* Input */}
             <div className="mx-auto w-full max-w-3xl">
-              <InputBox ref={inputRef} onSend={handleSend} disabled={isStreaming} />
+              <InputBox ref={inputRef} onSend={handleSend} onStop={disconnect} disabled={isStreaming} isStreaming={isStreaming} />
             </div>
           </div>
         </ResizablePanel>

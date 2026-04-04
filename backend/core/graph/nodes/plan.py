@@ -15,9 +15,12 @@ from core.graph.state import GraphState
 logger = logging.getLogger(__name__)
 
 PLAN_SYSTEM_PROMPT = (
-    "分析用户请求，将其分解为 2-5 个有序执行步骤。"
-    "输出 JSON: {\"steps\": [\"步骤1\", ...]}"
-    "\n\n注意：只输出 JSON，不要包含其他内容。"
+    "分析用户请求，将其分解为 2-3 个独立的子任务（最多 3 个，系统并行上限为 3）。"
+    "每个子任务应该是一个完整的、可独立执行的查询。"
+    "\n\n例如：用户说'分别调研 React、Vue、Svelte 的最新版本'，"
+    "应拆分为：['调研 React 最新版本和特性', '调研 Vue 最新版本和特性', '调研 Svelte 最新版本和特性']"
+    "\n\n输出 JSON: {\"steps\": [\"子任务1\", \"子任务2\", ...]}"
+    "\n只输出 JSON。"
 )
 
 
@@ -36,7 +39,14 @@ def plan_node(state: GraphState, model: Any) -> dict:
         steps = [user_query]
 
     todos = [TodoItem(content=step) for step in steps]
-    return {"todos": todos}
+    result: dict = {"todos": todos}
+
+    # Ultra mode: also populate metadata.subtasks for dispatch parallelism
+    mode = state.get("execution_mode", "pro")
+    if mode == "ultra":
+        result["metadata"] = {**state.get("metadata", {}), "subtasks": steps}
+
+    return result
 
 
 def _extract_user_query(state: GraphState) -> str:

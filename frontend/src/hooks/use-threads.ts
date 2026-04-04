@@ -5,7 +5,26 @@ import type { Thread } from "@/lib/types";
 
 export function useThreads() {
   const [threads, setThreads] = useState<Thread[]>([]);
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeThreadId, _setActiveThreadId] = useState<string | null>(() => {
+    // Restore from URL hash on mount
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.slice(1);
+      return hash || null;
+    }
+    return null;
+  });
+
+  // Sync activeThreadId to URL hash
+  const setActiveThreadId = useCallback((id: string | null) => {
+    _setActiveThreadId(id);
+    if (typeof window !== "undefined") {
+      if (id) {
+        window.history.replaceState(null, "", `#${id}`);
+      } else {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     try {

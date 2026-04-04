@@ -117,8 +117,25 @@ async def delete_thread(thread_id: str):
 
 
 def _auto_title(message: str) -> str:
-    """Generate a short title from the first user message."""
-    # Take first line, truncate to 30 chars
+    """Generate a concise title using LLM, with truncation fallback."""
+    try:
+        from core.models.factory import create_chat_model
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        model = create_chat_model()
+        response = model.invoke([
+            SystemMessage(content=(
+                "根据用户的第一条消息，生成一个简洁的对话标题（5-15个字）。"
+                "只输出标题文字，不要引号、标点或解释。"
+            )),
+            HumanMessage(content=message),
+        ])
+        title = response.content.strip().strip('"\'""')
+        if 2 <= len(title) <= 30:
+            return title
+    except Exception:
+        pass
+    # Fallback: truncate
     first_line = message.strip().split("\n")[0].strip()
     if len(first_line) <= 30:
         return first_line

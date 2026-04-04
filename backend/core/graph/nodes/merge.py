@@ -35,14 +35,22 @@ def merge_node(state: GraphState, model: Any) -> dict:
     if len(outputs) == 1:
         return {"messages": [AIMessage(content=outputs[0])]}
 
+    # Get original user query for context
+    user_query = ""
+    for msg in reversed(state.get("messages", [])):
+        if isinstance(msg, HumanMessage):
+            user_query = msg.content if isinstance(msg.content, str) else str(msg.content)
+            break
+
     # Multiple outputs — ask LLM to synthesize
     numbered = "\n\n".join(
         f"--- 子任务 {i + 1} ---\n{out}" for i, out in enumerate(outputs)
     )
+    prompt = f"用户原始问题：{user_query}\n\n以下是 {len(outputs)} 个并行子任务的执行结果：\n\n{numbered}"
     try:
         response = model.invoke([
             SystemMessage(content=MERGE_SYSTEM_PROMPT),
-            HumanMessage(content=numbered),
+            HumanMessage(content=prompt),
         ])
         return {"messages": [response]}
     except Exception as e:

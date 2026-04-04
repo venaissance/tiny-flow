@@ -36,6 +36,10 @@ def reflector_node(
     max_iterations: int = 3,
 ) -> dict:
     """Review completed tasks and decide: respond or loop back."""
+    # Ultra mode: Merge node already synthesized the response, just pass through
+    if state.get("execution_mode") == "ultra":
+        return {}
+
     iteration = state.get("iteration", 1)
     completed = state.get("completed_tasks", [])
     previous_output = state.get("previous_round_output", "")

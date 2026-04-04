@@ -4,7 +4,20 @@ import { useCallback, useState } from "react";
 import { Streamdown } from "streamdown";
 import { streamdownPlugins } from "@/core/streamdown";
 import { Bot, Loader2, Copy, Check, FileCode2, ExternalLink } from "lucide-react";
+import { ThinkingBlock } from "@/components/chat/thinking-block";
 import type { Message } from "@/lib/types";
+
+/**
+ * Extract <thinking>...</thinking> blocks from content.
+ * Returns { thinking, answer } where answer is the content without thinking blocks.
+ */
+function extractThinking(content: string): { thinking: string | null; answer: string } {
+  const match = content.match(/<thinking>([\s\S]*?)<\/thinking>/);
+  if (!match) return { thinking: null, answer: content };
+  const thinking = match[1]?.trim() || null;
+  const answer = content.replace(/<thinking>[\s\S]*?<\/thinking>/, "").trim();
+  return { thinking, answer };
+}
 
 /**
  * Detect if message content contains a full HTML document that would
@@ -81,6 +94,11 @@ function HtmlArtifactCard({ content, isStreaming }: { content: string; isStreami
     content.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]*>/g, "").trim();
   const title = isStreaming ? "正在生成网页..." : (titleMatch || "网页已生成");
 
+  // Extract a readable preview: strip HTML tags, take last ~150 chars (most recent content)
+  const preview = isStreaming
+    ? content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(-150)
+    : null;
+
   return (
     <div className="group mb-6 flex gap-3">
       <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
@@ -91,14 +109,26 @@ function HtmlArtifactCard({ content, isStreaming }: { content: string; isStreami
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-3 rounded-xl border border-blue-200/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 px-4 py-3 shadow-sm dark:border-blue-800/40 dark:from-blue-950/30 dark:to-indigo-950/20">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p>
-            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-              {isStreaming ? "生成完成后可在右侧面板预览" : "HTML 页面已生成，请在右侧面板预览"}
-            </p>
+        <div className="rounded-xl border border-blue-200/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 shadow-sm dark:border-blue-800/40 dark:from-blue-950/30 dark:to-indigo-950/20">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p>
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                {isStreaming
+                  ? `已生成 ${content.length} 字符...`
+                  : "HTML 页面已生成，请在右侧面板预览"}
+              </p>
+            </div>
+            {!isStreaming && <ExternalLink className="h-4 w-4 flex-shrink-0 text-gray-400" />}
           </div>
-          {!isStreaming && <ExternalLink className="h-4 w-4 flex-shrink-0 text-gray-400" />}
+          {/* Streaming preview: show real-time content excerpt */}
+          {isStreaming && preview && (
+            <div className="border-t border-blue-100/60 px-4 py-2 dark:border-blue-800/30">
+              <p className="line-clamp-3 font-mono text-[11px] leading-relaxed text-gray-400 dark:text-gray-500">
+                {preview}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -130,8 +160,9 @@ function AssistantMessage({
     return <HtmlArtifactCard content={message.content} isStreaming={isStreaming} />;
   }
 
-  // Defense-in-depth: strip any stray <style>/<script> tags
-  const safeContent = sanitizeForStreamdown(message.content);
+  // Extract <thinking> blocks and strip dangerous tags
+  const { thinking, answer } = extractThinking(message.content);
+  const safeContent = sanitizeForStreamdown(answer);
 
   return (
     <div className="group mb-6 flex gap-3">
@@ -139,6 +170,7 @@ function AssistantMessage({
         <Bot className="h-4 w-4 text-gray-500 dark:text-gray-400" />
       </div>
       <div className="relative min-w-0 flex-1 border-l-2 border-gray-200/60 pl-4 dark:border-gray-700/40">
+        {thinking && !isStreaming && <ThinkingBlock content={thinking} />}
         <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-headings:font-semibold">
           <Streamdown
             remarkPlugins={streamdownPlugins.remarkPlugins}

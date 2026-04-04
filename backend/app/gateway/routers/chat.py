@@ -87,12 +87,13 @@ async def chat(request: ChatRequest):
                 elif kind == "on_chain_end":
                     name = event.get("name", "")
                     output = event.get("data", {}).get("output")
-                    if isinstance(output, dict) and name in NODE_LABELS:
-                        # Process structured node outputs (route decisions, tasks, tool calls)
-                        await _process_node_output(name, output, evt, event_stream)
-                        # Yield all buffered events from node output
+                    if isinstance(output, dict):
+                        # Extract events from ANY node output (not just NODE_LABELS)
                         for e in _extract_node_events(name, output, evt):
                             yield e
+                        # Progress label for known nodes
+                        if name in NODE_LABELS and name not in seen_nodes:
+                            pass  # already sent via on_chain_start
 
                 # --- Token-level LLM streaming ---
                 elif kind == "on_chat_model_stream":
@@ -150,8 +151,19 @@ def _extract_node_events(node_name: str, output: dict, evt) -> list[dict]:
     # TODO updates (from plan node or execute node)
     if "todos" in output and output["todos"]:
         todos = output["todos"]
-        todo_data = [{"id": t.id, "content": t.content, "status": t.status, "error": t.error} for t in todos]
-        events.append(evt("todo_update", {"todos": todo_data}))
+        todo_data = []
+        for t in todos:
+            try:
+                todo_data.append({
+                    "id": getattr(t, "id", str(t)),
+                    "content": getattr(t, "content", str(t)),
+                    "status": getattr(t, "status", "pending"),
+                    "error": getattr(t, "error", None),
+                })
+            except Exception:
+                todo_data.append({"id": "?", "content": str(t), "status": "pending", "error": None})
+        if todo_data:
+            events.append(evt("todo_update", {"todos": todo_data}))
 
     # Loop detection warning
     if output.get("_loop_terminated"):

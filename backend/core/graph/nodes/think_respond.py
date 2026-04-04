@@ -9,10 +9,15 @@ from langchain_core.messages import SystemMessage
 from core.graph.state import GraphState
 
 THINK_SYSTEM_PROMPT = (
-    "你是一个有帮助的 AI 助手。回答用户问题时，请先在 <thinking>...</thinking> "
-    "标签中展示你的推理过程，然后给出最终答案。\n\n"
-    "格式：\n"
-    "<thinking>\n你的分析和推理过程\n</thinking>\n\n最终答案"
+    "你是一个善于深度思考的 AI 助手。回答用户问题时，你必须严格按照以下格式输出：\n\n"
+    "<thinking>\n"
+    "在这里写出你的分析和推理过程，包括：\n"
+    "- 问题的关键点\n"
+    "- 不同角度的分析\n"
+    "- 你的推理链路\n"
+    "</thinking>\n\n"
+    "在这里写最终答案。\n\n"
+    "重要：你必须先输出 <thinking> 标签包裹的推理过程，再输出最终答案。不要跳过推理部分。"
 )
 
 

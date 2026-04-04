@@ -122,6 +122,12 @@ export function useChat() {
       on("content", (data) => {
         const { content: chunk } = data as { content: string };
 
+        // Clear processing messages (search spinners) once content arrives
+        const hadProcessing = buffer.messages.some((m) => m.role === "processing");
+        if (hadProcessing) {
+          buffer.messages = buffer.messages.filter((m) => m.role !== "processing");
+        }
+
         if (!buffer.assistantCreated) {
           buffer.assistantCreated = true;
           const assistantMsg: Message = {
@@ -191,7 +197,12 @@ export function useChat() {
       });
 
       on("done", () => {
-        // Save buffer to backend (works even if user switched away)
+        // Clean up any remaining processing messages
+        buffer.messages = buffer.messages.filter((m) => m.role !== "processing");
+        if (isCurrent()) {
+          setMessages([...buffer.messages]);
+        }
+        // Save buffer to backend
         saveBufferToBackend(expectedThread, buffer);
       });
 

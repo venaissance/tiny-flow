@@ -10,7 +10,7 @@ import {
   type KeyboardEvent,
   type ChangeEvent,
 } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CHAR_COUNT_THRESHOLD = 200;
@@ -19,7 +19,9 @@ const LINE_HEIGHT = 24; // px — matches leading-6 / text-sm default
 
 interface InputBoxProps {
   onSend: (message: string) => void;
+  onStop?: () => void;
   disabled?: boolean;
+  isStreaming?: boolean;
 }
 
 export interface InputBoxHandle {
@@ -27,7 +29,7 @@ export interface InputBoxHandle {
 }
 
 export const InputBox = forwardRef<InputBoxHandle, InputBoxProps>(
-  function InputBox({ onSend, disabled }, ref) {
+  function InputBox({ onSend, onStop, disabled, isStreaming }, ref) {
     const [value, setValue] = useState("");
     const [focused, setFocused] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -105,18 +107,28 @@ export const InputBox = forwardRef<InputBoxHandle, InputBoxProps>(
             rows={1}
             className="block w-full resize-none bg-transparent px-4 py-3 pr-12 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed dark:text-gray-100 dark:placeholder:text-gray-500"
           />
-          <button
-            onClick={handleSend}
-            disabled={!canSend}
-            className={cn(
-              "absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200",
-              canSend
-                ? "bg-blue-500 text-white shadow-sm hover:bg-blue-600 active:scale-95"
-                : "bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-600",
-            )}
-          >
-            <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
-          </button>
+          {isStreaming ? (
+            <button
+              onClick={onStop}
+              className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-xl bg-red-500 text-white shadow-sm transition-all duration-200 hover:bg-red-600 active:scale-95"
+              title="停止生成"
+            >
+              <Square className="h-3.5 w-3.5" fill="currentColor" />
+            </button>
+          ) : (
+            <button
+              onClick={handleSend}
+              disabled={!canSend}
+              className={cn(
+                "absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200",
+                canSend
+                  ? "bg-blue-500 text-white shadow-sm hover:bg-blue-600 active:scale-95"
+                  : "bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-600",
+              )}
+            >
+              <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+            </button>
+          )}
         </div>
         {value.length >= CHAR_COUNT_THRESHOLD && (
           <div className="mt-1 text-right text-xs text-gray-400">
