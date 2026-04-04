@@ -40,6 +40,12 @@ def reflector_node(
     if state.get("execution_mode") == "ultra":
         return {}
 
+    # Pro mode: if there are still pending tasks, loop back to execute
+    pending = state.get("pending_tasks", [])
+    if pending:
+        logger.info(f"Reflector: {len(pending)} tasks still pending, looping back")
+        return {"route": "continue_execute"}
+
     iteration = state.get("iteration", 1)
     completed = state.get("completed_tasks", [])
     previous_output = state.get("previous_round_output", "")

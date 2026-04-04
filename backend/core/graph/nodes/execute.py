@@ -1,5 +1,5 @@
 # backend/core/graph/nodes/execute.py
-"""Execute node — runs tasks, parallel for Ultra mode."""
+"""Execute node — runs one task per cycle (Pro) or all in parallel (Ultra)."""
 from __future__ import annotations
 
 import logging
@@ -13,7 +13,6 @@ from core.graph.state import GraphState
 
 logger = logging.getLogger(__name__)
 
-# Shared pool for Ultra parallel execution (max 3 concurrent, matches DeerFlow)
 _ULTRA_POOL = ThreadPoolExecutor(max_workers=3, thread_name_prefix="ultra")
 
 
@@ -54,21 +53,23 @@ def _run_single_task(task: TaskSpec, model: Any) -> tuple[TaskResult, list[dict]
 
 
 def execute_node(state: GraphState, model: Any) -> dict:
-    """Execute pending tasks. Ultra mode runs in parallel via ThreadPool."""
+    """Execute tasks.
+
+    Pro mode: ONE task per invocation (enables per-TODO SSE updates via graph loop).
+    Ultra mode: ALL tasks in parallel via ThreadPool.
+    """
     tasks = state.get("pending_tasks", [])
     if not tasks:
         return {"pending_tasks": [], "iteration": state.get("iteration", 0) + 1}
 
     mode = state.get("execution_mode", "pro")
+    todos = list(state.get("todos", []))
+    pending_todos = [t for t in todos if t.status == "pending"]
     all_results: list[TaskResult] = []
     all_tool_calls: list[dict] = []
 
-    todos = list(state.get("todos", []))
-    pending_todos = [t for t in todos if t.status == "pending"]
-
     if mode == "ultra" and len(tasks) > 1:
-        # ── Ultra: parallel execution ──
-        # Mark all TODOs as in_progress simultaneously
+        # ── Ultra: all tasks in parallel ──
         for t in pending_todos:
             t.status = "in_progress"
 
@@ -77,44 +78,40 @@ def execute_node(state: GraphState, model: Any) -> dict:
             _ULTRA_POOL.submit(_run_single_task, task, model): (task, i)
             for i, task in enumerate(tasks)
         }
-
         for future in as_completed(futures):
             task, idx = futures[future]
             try:
                 result, tool_calls = future.result()
                 all_results.append(result)
                 all_tool_calls.extend(tool_calls)
-                # Mark corresponding TODO as completed
                 if idx < len(pending_todos):
                     pending_todos[idx].status = "completed" if result.status == "completed" else "failed"
-                logger.info(f"Task {task.id} completed: {result.status} ({result.duration_seconds:.1f}s)")
             except Exception as e:
                 logger.exception(f"Task {task.id} failed: {e}")
                 all_results.append(TaskResult(task_id=task.id, status="failed", error=str(e)))
                 if idx < len(pending_todos):
                     pending_todos[idx].status = "failed"
+
+        remaining_tasks: list[TaskSpec] = []
     else:
-        # ── Pro/single: sequential execution with per-TODO progress ──
-        for i, task in enumerate(tasks):
-            # Mark current TODO as in_progress
-            if i < len(pending_todos):
-                pending_todos[i].status = "in_progress"
+        # ── Pro: execute FIRST task only, leave rest pending ──
+        first_task = tasks[0]
+        remaining_tasks = tasks[1:]
 
-            result, tool_calls = _run_single_task(task, model)
-            all_results.append(result)
-            all_tool_calls.extend(tool_calls)
+        # Mark first pending TODO as in_progress
+        if pending_todos:
+            pending_todos[0].status = "in_progress"
 
-            # Mark current TODO as completed/failed
-            if i < len(pending_todos):
-                pending_todos[i].status = "completed" if result.status == "completed" else "failed"
+        result, tool_calls = _run_single_task(first_task, model)
+        all_results.append(result)
+        all_tool_calls.extend(tool_calls)
 
-        # Mark any remaining TODOs as completed (single task covers all steps)
-        for t in pending_todos:
-            if t.status == "pending" or t.status == "in_progress":
-                t.status = "completed"
+        # Mark first pending TODO as completed/failed
+        if pending_todos:
+            pending_todos[0].status = "completed" if result.status == "completed" else "failed"
 
     return {
-        "pending_tasks": [],
+        "pending_tasks": remaining_tasks,
         "completed_tasks": state.get("completed_tasks", []) + all_results,
         "iteration": state.get("iteration", 0) + 1,
         "last_tool_calls": all_tool_calls,

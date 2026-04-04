@@ -164,16 +164,18 @@ def build_graph(
     # Merge → Reflector
     graph.add_edge("merge", "reflector")
 
-    # Reflector → END or loop back to plan
-    # Only loop if reflector explicitly sets route="needs_more_work"
-    # (default: end after one execution cycle)
+    # Reflector → END, loop to execute (pending tasks), or loop to plan
     def reflector_decision(state: GraphState) -> str:
-        if state.get("route") == "needs_more_work":
+        route = state.get("route")
+        if route == "continue_execute":
+            return "execute"  # More pending tasks → loop back
+        if route == "needs_more_work":
             return "plan"
         return "end"
 
     graph.add_conditional_edges("reflector", reflector_decision, {
         "end": END,
+        "execute": "execute",
         "plan": "plan",
     })
 
