@@ -6,6 +6,10 @@ export type SSEEventType =
   | "subagent_status"
   | "subagent_result"
   | "memory_update"
+  | "todo_update"
+  | "mode_selected"
+  | "loop_warning"
+  | "context_compacted"
   | "done"
   | "error";
 
@@ -51,4 +55,13 @@ export interface Thread {
   thread_id: string;
   title?: string;
   updated_at?: string;
+}
+
+export type ExecutionMode = "flash" | "thinking" | "pro" | "ultra";
+
+export interface TodoItem {
+  id: string;
+  content: string;
+  status: "pending" | "in_progress" | "completed" | "failed";
+  error?: string;
 }

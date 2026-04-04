@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import type { Message, ToolCallInfo, AgentStep } from "@/lib/types";
+import type { Message, ToolCallInfo, AgentStep, TodoItem, ExecutionMode } from "@/lib/types";
 import { useSSE } from "./use-sse";
 
 export type { AgentStep } from "@/lib/types";
@@ -14,12 +14,15 @@ export type { AgentStep } from "@/lib/types";
 interface ThreadBuffer {
   messages: Message[];
   assistantCreated: boolean;
+  todos: TodoItem[];
 }
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [steps, setSteps] = useState<AgentStep[]>([]);
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [executionMode, setExecutionMode] = useState<ExecutionMode | null>(null);
   const { connect, disconnect, on, clearHandlers } = useSSE();
   const sendingRef = useRef(false);
   const activeThreadRef = useRef<string>("default");
@@ -44,6 +47,7 @@ export function useChat() {
       const buffer: ThreadBuffer = {
         messages: [...messages, userMsg],
         assistantCreated: false,
+        todos: [],
       };
       buffersRef.current.set(threadId, buffer);
 
@@ -142,6 +146,46 @@ export function useChat() {
         }
       });
 
+      on("todo_update", (data) => {
+        const { todos: newTodos } = data as { todos: TodoItem[] };
+        buffer.todos = newTodos;
+        if (isCurrent()) setTodos(newTodos);
+      });
+
+      on("mode_selected", (data) => {
+        const { mode, reason } = data as { mode: ExecutionMode; reason: string };
+        if (isCurrent()) {
+          setExecutionMode(mode);
+          setSteps(prev => [...prev, {
+            id: nanoid(), type: "thinking",
+            content: `策略: ${mode === "flash" ? "⚡ 快速回答" : mode === "thinking" ? "🧠 深度推理" : mode === "pro" ? "📋 规划执行" : "🚀 并行研究"} — ${reason}`,
+            status: "completed", timestamp: Date.now(),
+          }]);
+        }
+      });
+
+      on("loop_warning", (data) => {
+        const { message } = data as { message: string };
+        if (isCurrent()) {
+          setSteps(prev => [...prev, {
+            id: nanoid(), type: "thinking",
+            content: `⚠️ ${message}`,
+            status: "failed", timestamp: Date.now(),
+          }]);
+        }
+      });
+
+      on("context_compacted", (data) => {
+        const { original_messages, compacted_to } = data as { original_messages: number; compacted_to: number };
+        if (isCurrent()) {
+          setSteps(prev => [...prev, {
+            id: nanoid(), type: "thinking",
+            content: `ℹ️ 对话较长，已压缩 ${original_messages} 条消息为 ${compacted_to} 条`,
+            status: "completed", timestamp: Date.now(),
+          }]);
+        }
+      });
+
       on("done", () => {
         // Save buffer to backend (works even if user switched away)
         saveBufferToBackend(expectedThread, buffer);
@@ -226,6 +270,8 @@ export function useChat() {
       // DON'T disconnect — let background streams finish
       activeThreadRef.current = threadId;
       setSteps([]);
+      setTodos([]);
+      setExecutionMode(null);
 
       // If not currently streaming for this thread, clear streaming state
       if (!sendingRef.current || activeThreadRef.current !== threadId) {
@@ -245,5 +291,5 @@ export function useChat() {
     setIsStreaming(false);
   }, []);
 
-  return { messages, isStreaming, steps, send, disconnect, clearMessages, switchToThread, setMessages };
+  return { messages, isStreaming, steps, todos, executionMode, send, disconnect, clearMessages, switchToThread, setMessages };
 }

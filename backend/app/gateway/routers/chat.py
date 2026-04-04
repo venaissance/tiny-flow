@@ -20,10 +20,13 @@ router = APIRouter()
 NODE_LABELS = {
     "router": "正在分析您的问题...",
     "respond": "正在生成回复...",
-    "dispatch": "正在准备研究任务...",
+    "think_respond": "正在深度推理...",
+    "plan": "正在制定执行计划...",
+    "dispatch": "正在分派并行任务...",
     "skill_node": "正在匹配专业技能...",
-    "execute": "研究员正在工作中，请稍候...",
-    "reflector": "正在审查研究结果...",
+    "execute": "正在执行任务...",
+    "merge": "正在汇总并行结果...",
+    "reflector": "正在审查执行结果...",
 }
 
 
@@ -56,6 +59,8 @@ async def chat(request: ChatRequest):
             "memory_context": "",
             "metadata": {"thread_id": request.thread_id},
             "last_tool_calls": [],
+            "todos": [],
+            "execution_mode": "",
         }
         config = {"configurable": {"thread_id": request.thread_id}}
 
@@ -98,7 +103,7 @@ async def chat(request: ChatRequest):
                         # Router node tokens are internal decisions, not user-facing
                         tags = event.get("tags", [])
                         parent = event.get("metadata", {}).get("langgraph_node", "")
-                        if parent in ("respond", "reflector", "execute"):
+                        if parent in ("respond", "think_respond", "reflector", "execute", "merge"):
                             yield evt("content", {"content": content})
 
                 # --- Tool call events from within subagent ---
@@ -134,11 +139,30 @@ def _extract_node_events(node_name: str, output: dict, evt) -> list[dict]:
             for line in full.split("\n"):
                 events.append(evt("content", {"content": line + "\n"}))
 
-    # Route decision
-    if "route" in output and output["route"]:
-        route = output["route"]
-        desc = {"direct": "直接回答", "subagent": "启动深度研究", "skill": "匹配到专业技能"}.get(route, route)
+    # Execution mode selected (4-way router)
+    if "execution_mode" in output and output["execution_mode"]:
+        mode = output["execution_mode"]
+        mode_labels = {"flash": "⚡ 快速回答", "thinking": "🧠 深度推理", "pro": "📋 规划执行", "ultra": "🚀 并行研究"}
+        desc = mode_labels.get(mode, mode)
+        events.append(evt("mode_selected", {"mode": mode, "reason": f"自动选择 {desc} 模式"}))
         events.append(evt("thinking", {"node": "router", "content": f"决策: {desc}"}))
+
+    # TODO updates (from plan node or execute node)
+    if "todos" in output and output["todos"]:
+        todos = output["todos"]
+        todo_data = [{"id": t.id, "content": t.content, "status": t.status, "error": t.error} for t in todos]
+        events.append(evt("todo_update", {"todos": todo_data}))
+
+    # Loop detection warning
+    if output.get("_loop_terminated"):
+        events.append(evt("loop_warning", {"iteration": 0, "message": output.get("_loop_reason", "检测到循环")}))
+
+    # Context compaction
+    if output.get("_context_compacted"):
+        events.append(evt("context_compacted", {
+            "original_messages": output.get("_original_count", 0),
+            "compacted_to": output.get("_compacted_count", 0),
+        }))
 
     # Pending tasks (dispatch created them)
     if "pending_tasks" in output and output["pending_tasks"]:

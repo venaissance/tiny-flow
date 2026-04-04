@@ -7,7 +7,7 @@ from typing import Annotated, TypedDict
 from langchain_core.messages import BaseMessage
 from langgraph.graph import add_messages
 
-from core.executor.task import TaskSpec, TaskResult
+from core.executor.task import TaskSpec, TaskResult, TodoItem
 
 
 class GraphState(TypedDict):
@@ -20,3 +20,5 @@ class GraphState(TypedDict):
     memory_context: str
     metadata: dict
     last_tool_calls: list[dict]                # tool calls from last execute round
+    todos: list                                # list of TodoItem (execution plan)
+    execution_mode: str                        # "flash" | "thinking" | "pro" | "ultra"

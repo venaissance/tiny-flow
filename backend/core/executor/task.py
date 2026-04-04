@@ -50,3 +50,12 @@ class SubagentResult:
     error: str | None = None
     started_at: float | None = None
     completed_at: float | None = None
+
+
+@dataclass
+class TodoItem:
+    """A single step in the execution plan."""
+    id: str = field(default_factory=lambda: f"todo_{uuid.uuid4().hex[:6]}")
+    content: str = ""
+    status: Literal["pending", "in_progress", "completed", "failed"] = "pending"
+    error: str | None = None
