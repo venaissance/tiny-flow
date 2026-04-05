@@ -1,0 +1,55 @@
+name: E2E Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *"
+
+jobs:
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    env:
+      GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install backend dependencies
+        run: cd backend && uv sync --extra dev
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install --frozen-lockfile
+
+      - name: Start backend
+        run: cd backend && uv run uvicorn app.gateway.app:app --host 0.0.0.0 --port 8000 &
+
+      - name: Start frontend
+        run: cd frontend && pnpm dev &
+
+      - name: Wait for services
+        run: sleep 10
+
+      - name: Run backend E2E (real LLM)
+        if: env.GLM_API_KEY != ''
+        continue-on-error: true
+        run: cd backend && uv run pytest tests/test_e2e.py -v
+
+      - name: Install Playwright
+        run: cd backend && uv run playwright install chromium
+
+      - name: Run browser E2E
+        run: cd backend && uv run pytest tests/test_browser_e2e.py -v
