@@ -110,6 +110,12 @@ def execute_node(state: GraphState, model: Any) -> dict:
         if pending_todos:
             pending_todos[0].status = "completed" if result.status == "completed" else "failed"
 
+        # For single-task skills (no tools), mark ALL remaining pending TODOs as completed
+        if not remaining_tasks and result.status == "completed":
+            for t in todos:
+                if t.status == "pending":
+                    t.status = "completed"
+
     return {
         "pending_tasks": remaining_tasks,
         "completed_tasks": state.get("completed_tasks", []) + all_results,

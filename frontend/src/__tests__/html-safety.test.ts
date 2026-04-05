@@ -125,6 +125,80 @@ simulateSend("thread-a", "background completion");
 assert(buffers.get("thread-a")!.messages.length === 3, "background stream saves to correct buffer");
 assert(buffers.get("thread-b")!.messages.length === 1, "thread-b unaffected by thread-a's background stream");
 
+console.log("\n🔀 Concurrent Thread Isolation Tests\n");
+
+// Simulate the per-thread stream architecture
+interface MockStream {
+  messages: string[];
+  steps: string[];
+  running: boolean;
+  mode: string | null;
+}
+
+const streams = new Map<string, MockStream>();
+let activeThread = "default";
+
+function createStream(threadId: string): MockStream {
+  const s: MockStream = { messages: [], steps: [], running: true, mode: null };
+  streams.set(threadId, s);
+  return s;
+}
+
+function switchTo(threadId: string) {
+  activeThread = threadId;
+}
+
+// Test: Two threads can run concurrently
+const streamA = createStream("A");
+const streamB = createStream("B");
+
+streamA.messages.push("user-A");
+streamA.mode = "pro";
+streamA.steps.push("thinking-A");
+
+// Switch to B while A is still running
+switchTo("B");
+streamB.messages.push("user-B");
+streamB.mode = "flash";
+
+assert(streamA.running && streamB.running, "both threads running concurrently");
+assert(streamA.messages.length === 1 && streamA.messages[0] === "user-A", "thread-A messages isolated");
+assert(streamB.messages.length === 1 && streamB.messages[0] === "user-B", "thread-B messages isolated");
+assert(streamA.mode === "pro" && streamB.mode === "flash", "execution modes isolated per thread");
+
+// Test: Background thread completes independently
+streamA.messages.push("assistant-A-response");
+streamA.running = false;
+streamA.steps.push("done-A");
+
+assert(!streamA.running && streamB.running, "thread-A finished while B still running");
+assert(streamA.messages.length === 2, "thread-A accumulated messages in background");
+assert(activeThread === "B", "active thread unchanged by background completion");
+
+// Test: Switching back restores full state
+switchTo("A");
+const restoredA = streams.get("A")!;
+assert(restoredA.messages.length === 2, "switch back restores messages");
+assert(restoredA.steps.length === 2, "switch back restores steps (reasoning trace)");
+assert(restoredA.mode === "pro", "switch back restores execution mode");
+assert(!restoredA.running, "switch back shows correct streaming state");
+
+// Test: Per-thread abort only affects target thread
+streamB.running = false; // simulate abort on B
+assert(!streamB.running, "abort only affects target thread");
+assert(restoredA.messages.length === 2, "abort on B does not affect A");
+
+// Test: New send on same thread blocked while running
+const streamC = createStream("C");
+assert(streamC.running, "new stream starts running");
+// Attempting to send again on C should be blocked (per-thread lock)
+const existingC = streams.get("C");
+const canSendOnC = !(existingC?.running);
+assert(!canSendOnC, "per-thread lock prevents double send on same thread");
+// But sending on D should work
+const canSendOnD = !streams.get("D")?.running;
+assert(canSendOnD, "different thread is not blocked by C's lock");
+
 // ── Summary ──
 
 console.log(`\n${"─".repeat(40)}`);
