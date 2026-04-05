@@ -24,7 +24,7 @@
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/lang-python": "^6.2.1",
     "@codemirror/language-data": "^6.5.2",
-    "@langchain/core": "^1.1.15",
+    "@langchain/core": "^1.1.39",
     "@langchain/langgraph-sdk": "^1.5.3",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-collapsible": "^1.1.12",
