@@ -10,7 +10,7 @@ from .routers import chat, threads
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="MdwFlow Lite", version="0.1.0")
+    app = FastAPI(title="TinyFlow", version="0.1.0")
 
     app.add_middleware(
         CORSMiddleware,

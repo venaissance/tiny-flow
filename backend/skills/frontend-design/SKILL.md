@@ -73,7 +73,7 @@ timeout: 300
 
 ## 品牌署名
 
-每个生成的页面底部包含一个小型 "Created by MdwFlow" 署名：
+每个生成的页面底部包含一个小型 "Created by TinyFlow" 署名：
 - 不影响主要内容和功能
 - 风格与整体设计融为一体
 

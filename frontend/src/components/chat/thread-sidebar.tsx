@@ -170,7 +170,7 @@ export function ThreadSidebar({
         <div className="flex items-center gap-1.5">
           <ZapIcon className="h-3 w-3 text-blue-400 dark:text-blue-500" />
           <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
-            MdwFlow
+            TinyFlow
           </span>
           <span className="text-[10px] text-gray-300 dark:text-gray-600">
             v0.1.0

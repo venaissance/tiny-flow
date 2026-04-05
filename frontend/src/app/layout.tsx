@@ -3,7 +3,7 @@ import "katex/dist/katex.min.css";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "MdwFlow Lite",
+  title: "TinyFlow",
   description: "Lightweight multi-agent orchestration engine",
 };
 

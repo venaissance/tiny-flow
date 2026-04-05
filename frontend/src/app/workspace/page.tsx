@@ -269,7 +269,7 @@ export default function WorkspacePage() {
                   <path d="M8.2 12.9L15.5 16.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5" />
                 </svg>
                 <h1 className="text-sm font-semibold tracking-tight text-gray-800 dark:text-gray-200">
-                  MdwFlow<span className="ml-1 text-xs font-normal text-gray-400">Lite</span>
+                  TinyFlow
                 </h1>
               </div>
               <div className="flex items-center gap-3">
