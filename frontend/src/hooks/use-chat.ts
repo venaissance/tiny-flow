@@ -229,8 +229,14 @@ export function useChat() {
         }
       } finally {
         stream.running = false;
-        if (isCurrent(threadId)) setIsStreaming(false);
-        // Save to backend
+        // Finalize all "running" steps to "completed"
+        stream.buffer.steps = stream.buffer.steps.map((s) =>
+          s.status === "running" ? { ...s, status: "completed" as const } : s,
+        );
+        if (isCurrent(threadId)) {
+          setIsStreaming(false);
+          setSteps([...stream.buffer.steps]);
+        }
         saveBufferToBackend(threadId, stream.buffer);
       }
     },

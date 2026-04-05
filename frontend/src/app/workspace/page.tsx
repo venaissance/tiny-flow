@@ -115,6 +115,16 @@ export default function WorkspacePage() {
   const [showArtifact, setShowArtifact] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const firstMessageSentRef = useRef(false);
+  const initialLoadDone = useRef(false);
+
+  // On mount: if URL hash has a threadId, load its messages
+  useEffect(() => {
+    if (initialLoadDone.current) return;
+    if (activeThreadId && messages.length === 0) {
+      initialLoadDone.current = true;
+      switchToThread(activeThreadId);
+    }
+  }, [activeThreadId, messages.length, switchToThread]);
 
   // Scroll tracking
   const isNearBottomRef = useRef(true);

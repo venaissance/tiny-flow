@@ -34,7 +34,10 @@ function containsHtmlDocument(content: string): boolean {
 
 function UserMessage({ message }: { message: Message }) {
   return (
-    <div className="flex justify-end mb-4">
+    <div className="group flex items-center justify-end gap-1.5 mb-4">
+      <div className="opacity-0 transition-opacity group-hover:opacity-100">
+        <CopyButton text={message.content} />
+      </div>
       <div className="max-w-[70%] rounded-2xl rounded-br-md bg-blue-500/90 px-4 py-2.5 text-white text-sm shadow-sm shadow-blue-500/20 backdrop-blur-sm">
         {message.content}
       </div>
@@ -181,8 +184,9 @@ function AssistantMessage({
             {safeContent}
           </Streamdown>
         </div>
+        {/* Bottom action bar (Perplexity style) */}
         {!isStreaming && (
-          <div className="absolute -top-1 right-0 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="mt-2 flex items-center gap-0.5 border-t border-gray-100 pt-2 dark:border-gray-800">
             <CopyButton text={message.content} />
           </div>
         )}
