@@ -8,7 +8,7 @@
 ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Tests](https://img.shields.io/badge/Tests-297_passed-brightgreen)
-![CI](https://github.com/USER/tiny-flow/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/varian-mize/tiny-flow/actions/workflows/ci.yml/badge.svg)
 
 <a href="#english">English</a> | <a href="#中文">中文</a>
 
@@ -106,7 +106,7 @@ User
 **1. Clone the repository**
 
 ```bash
-git clone https://github.com/USER/tiny-flow.git
+git clone https://github.com/varian-mize/tiny-flow.git
 cd tiny-flow
 ```
 
@@ -343,7 +343,7 @@ TinyFlow 是一个基于 LangGraph 的轻量级多智能体编排引擎。它将
 **1. 克隆仓库**
 
 ```bash
-git clone https://github.com/USER/tiny-flow.git
+git clone https://github.com/varian-mize/tiny-flow.git
 cd tiny-flow
 ```
 
