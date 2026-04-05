@@ -1,0 +1,28 @@
+id: 1
+event: thinking
+data: {"node": "router", "content": "正在分析您的问题..."}
+
+id: 2
+event: mode_selected
+data: {"mode": "pro", "reason": "自动选择 📋 规划执行 模式"}
+
+id: 3
+event: thinking
+data: {"node": "router", "content": "决策: 📋 规划执行"}
+
+id: 4
+event: thinking
+data: {"node": "plan", "content": "正在制定执行计划..."}
+
+id: 5
+event: todo_update
+data: {"todos": [{"id": "t1", "content": "设计 UI", "status": "completed", "error": null}, {"id": "t2", "content": "实现功能", "status": "completed", "error": null}, {"id": "t3", "content": "添加交互", "status": "completed", "error": null}]}
+
+id: 6
+event: content
+data: {"content": "<!DOCTYPE html><html><head><title>TodoList</title><style>body{font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px}h1{color:#333}.todo-item{padding:8px;border-bottom:1px solid #eee}</style></head><body><h1>待办事项清单</h1><div class=\"todo-item\">示例任务</div></body></html>"}
+
+id: 7
+event: done
+data: {}
+

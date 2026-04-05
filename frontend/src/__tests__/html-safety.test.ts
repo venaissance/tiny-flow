@@ -1,209 +1,252 @@
-/**
- * HTML Safety Tests
- *
- * Validates that HTML document detection and sanitization work correctly.
- * Prevents CSS/JS injection into the host page via Streamdown rendering.
- *
- * Run: npx tsx src/__tests__/html-safety.test.ts
- */
+import { describe, it, expect } from 'vitest'
 
 // ── Inline implementations (mirroring message-item.tsx) ──
 
 function containsHtmlDocument(content: string): boolean {
   return (
-    content.includes("<!DOCTYPE") ||
-    content.includes("<!doctype") ||
+    content.includes('<!DOCTYPE') ||
+    content.includes('<!doctype') ||
     /```html\s*\n[\s\S]*<style/i.test(content) ||
-    (content.includes("<style") && content.includes("</style>"))
-  );
+    (content.includes('<style') && content.includes('</style>'))
+  )
 }
 
 function sanitizeForStreamdown(content: string): string {
   return content
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
 }
 
-// ── Tests ──
+// ── HTML Document Detection ──
 
-let passed = 0;
-let failed = 0;
+describe('containsHtmlDocument', () => {
+  it('detects <!DOCTYPE', () => {
+    expect(containsHtmlDocument('<!DOCTYPE html><html>...</html>')).toBe(true)
+  })
 
-function assert(condition: boolean, name: string) {
-  if (condition) {
-    passed++;
-    console.log(`  ✅ ${name}`);
-  } else {
-    failed++;
-    console.log(`  ❌ ${name}`);
+  it('detects <!doctype (lowercase)', () => {
+    expect(containsHtmlDocument('<!doctype html><html>...</html>')).toBe(true)
+  })
+
+  it('detects ```html block with <style>', () => {
+    expect(
+      containsHtmlDocument(
+        'Here is the code:\n```html\n<!DOCTYPE html>\n<style>body{}</style>\n```',
+      ),
+    ).toBe(true)
+  })
+
+  it('detects inline <style> tags', () => {
+    expect(
+      containsHtmlDocument('Some text <style>h1 { color: red; }</style> more text'),
+    ).toBe(true)
+  })
+
+  it('ignores plain markdown', () => {
+    expect(containsHtmlDocument('# Hello\n\nThis is **bold** text.')).toBe(false)
+  })
+
+  it('ignores inline code mentions', () => {
+    expect(containsHtmlDocument('Use `<style>` tags for CSS.')).toBe(false)
+  })
+
+  it('ignores non-HTML code blocks', () => {
+    expect(containsHtmlDocument("```python\nprint('hello')\n```")).toBe(false)
+  })
+
+  it('ignores simple HTML tags', () => {
+    expect(containsHtmlDocument('<p>A paragraph</p>')).toBe(false)
+  })
+})
+
+// ── Sanitization ──
+
+describe('sanitizeForStreamdown', () => {
+  it('strips <style> tags', () => {
+    expect(
+      sanitizeForStreamdown('text <style>body{color:red}</style> more'),
+    ).not.toContain('<style')
+  })
+
+  it('strips <script> tags', () => {
+    expect(
+      sanitizeForStreamdown("text <script>alert('xss')</script> more"),
+    ).not.toContain('<script')
+  })
+
+  it('preserves safe HTML', () => {
+    expect(sanitizeForStreamdown('Hello <b>world</b>')).toContain('<b>world</b>')
+  })
+
+  it('strips multiple style/script blocks', () => {
+    const multi = '<style>a{}</style>text<style>b{}</style><script>x</script>'
+    const cleaned = sanitizeForStreamdown(multi)
+    expect(cleaned).not.toContain('<style')
+    expect(cleaned).not.toContain('<script')
+    expect(cleaned).toContain('text')
+  })
+
+  it('strips style with attributes', () => {
+    expect(
+      sanitizeForStreamdown('<style type="text/css">body{font: 16px}</style>'),
+    ).not.toContain('<style')
+  })
+})
+
+// ── Thread Buffer Isolation ──
+
+describe('Thread Buffer Isolation', () => {
+  it('preserves buffer after thread switch', () => {
+    const buffers = new Map<string, { messages: string[] }>()
+
+    function simulateSend(threadId: string, content: string) {
+      if (!buffers.has(threadId)) buffers.set(threadId, { messages: [] })
+      buffers.get(threadId)!.messages.push(content)
+    }
+
+    function simulateSwitch(_from: string, to: string) {
+      if (!buffers.has(to)) buffers.set(to, { messages: [] })
+    }
+
+    simulateSend('thread-a', 'message 1')
+    simulateSend('thread-a', 'message 2')
+    simulateSwitch('thread-a', 'thread-b')
+    simulateSend('thread-b', 'message B')
+
+    expect(buffers.get('thread-a')!.messages).toHaveLength(2)
+    expect(buffers.get('thread-b')!.messages).toHaveLength(1)
+  })
+
+  it('background stream saves to correct buffer', () => {
+    const buffers = new Map<string, { messages: string[] }>()
+
+    function simulateSend(threadId: string, content: string) {
+      if (!buffers.has(threadId)) buffers.set(threadId, { messages: [] })
+      buffers.get(threadId)!.messages.push(content)
+    }
+
+    simulateSend('thread-a', 'message 1')
+    simulateSend('thread-a', 'message 2')
+    // switch to thread-b
+    if (!buffers.has('thread-b')) buffers.set('thread-b', { messages: [] })
+    simulateSend('thread-b', 'message B')
+
+    // background completion on thread-a
+    simulateSend('thread-a', 'background completion')
+
+    expect(buffers.get('thread-a')!.messages).toHaveLength(3)
+    expect(buffers.get('thread-b')!.messages).toHaveLength(1)
+  })
+})
+
+// ── Concurrent Thread Isolation ──
+
+describe('Concurrent Thread Isolation', () => {
+  interface MockStream {
+    messages: string[]
+    steps: string[]
+    running: boolean
+    mode: string | null
   }
-}
 
-console.log("\n🔒 HTML Document Detection Tests\n");
+  function createTestEnv() {
+    const streams = new Map<string, MockStream>()
+    let activeThread = 'default'
 
-// Must detect: raw HTML documents
-assert(containsHtmlDocument("<!DOCTYPE html><html>...</html>"), "detects <!DOCTYPE");
-assert(containsHtmlDocument("<!doctype html><html>...</html>"), "detects <!doctype (lowercase)");
+    function createStream(threadId: string): MockStream {
+      const s: MockStream = { messages: [], steps: [], running: true, mode: null }
+      streams.set(threadId, s)
+      return s
+    }
 
-// Must detect: markdown code blocks with HTML + style
-assert(
-  containsHtmlDocument("Here is the code:\n```html\n<!DOCTYPE html>\n<style>body{}</style>\n```"),
-  "detects ```html block with <style>",
-);
+    function switchTo(threadId: string) {
+      activeThread = threadId
+    }
 
-// Must detect: raw style tags in content
-assert(
-  containsHtmlDocument("Some text <style>h1 { color: red; }</style> more text"),
-  "detects inline <style> tags",
-);
+    return { streams, get activeThread() { return activeThread }, createStream, switchTo }
+  }
 
-// Must NOT detect: normal markdown
-assert(!containsHtmlDocument("# Hello\n\nThis is **bold** text."), "ignores plain markdown");
-assert(!containsHtmlDocument("Use `<style>` tags for CSS."), "ignores inline code mentions");
-assert(!containsHtmlDocument("```python\nprint('hello')\n```"), "ignores non-HTML code blocks");
+  it('both threads can run concurrently', () => {
+    const env = createTestEnv()
+    const streamA = env.createStream('A')
+    const streamB = env.createStream('B')
 
-// Must NOT detect: partial HTML (no style/script)
-assert(!containsHtmlDocument("<p>A paragraph</p>"), "ignores simple HTML tags");
+    streamA.messages.push('user-A')
+    streamA.mode = 'pro'
+    streamA.steps.push('thinking-A')
 
-console.log("\n🧹 Sanitization Tests\n");
+    env.switchTo('B')
+    streamB.messages.push('user-B')
+    streamB.mode = 'flash'
 
-// Must strip style tags
-assert(
-  !sanitizeForStreamdown("text <style>body{color:red}</style> more").includes("<style"),
-  "strips <style> tags",
-);
+    expect(streamA.running && streamB.running).toBe(true)
+    expect(streamA.messages).toEqual(['user-A'])
+    expect(streamB.messages).toEqual(['user-B'])
+    expect(streamA.mode).toBe('pro')
+    expect(streamB.mode).toBe('flash')
+  })
 
-// Must strip script tags
-assert(
-  !sanitizeForStreamdown("text <script>alert('xss')</script> more").includes("<script"),
-  "strips <script> tags",
-);
+  it('background thread completes independently', () => {
+    const env = createTestEnv()
+    const streamA = env.createStream('A')
+    const streamB = env.createStream('B')
 
-// Must preserve other content
-assert(
-  sanitizeForStreamdown("Hello <b>world</b>").includes("<b>world</b>"),
-  "preserves safe HTML",
-);
+    streamA.messages.push('user-A')
+    env.switchTo('B')
+    streamB.messages.push('user-B')
 
-// Must handle multiple style/script blocks
-const multi = "<style>a{}</style>text<style>b{}</style><script>x</script>";
-const cleaned = sanitizeForStreamdown(multi);
-assert(!cleaned.includes("<style") && !cleaned.includes("<script"), "strips multiple blocks");
-assert(cleaned.includes("text"), "preserves text between blocks");
+    // A completes in background
+    streamA.messages.push('assistant-A-response')
+    streamA.running = false
+    streamA.steps.push('done-A')
 
-// Edge case: nested-looking content
-assert(
-  !sanitizeForStreamdown('<style type="text/css">body{font: 16px}</style>').includes("<style"),
-  "strips style with attributes",
-);
+    expect(streamA.running).toBe(false)
+    expect(streamB.running).toBe(true)
+    expect(streamA.messages).toHaveLength(2)
+    expect(env.activeThread).toBe('B')
+  })
 
-console.log("\n📊 Thread Buffer Isolation Tests\n");
+  it('switching back restores full state', () => {
+    const env = createTestEnv()
+    const streamA = env.createStream('A')
+    env.createStream('B')
 
-// Simulate thread buffer behavior
-const buffers = new Map<string, { messages: string[] }>();
+    streamA.messages.push('user-A')
+    streamA.mode = 'pro'
+    streamA.steps.push('thinking-A', 'done-A')
+    streamA.running = false
 
-function simulateSend(threadId: string, content: string) {
-  if (!buffers.has(threadId)) buffers.set(threadId, { messages: [] });
-  buffers.get(threadId)!.messages.push(content);
-}
+    env.switchTo('B')
+    env.switchTo('A')
 
-function simulateSwitch(from: string, to: string) {
-  // Should NOT clear the source buffer
-  if (!buffers.has(to)) buffers.set(to, { messages: [] });
-}
+    const restored = env.streams.get('A')!
+    expect(restored.messages).toHaveLength(1)
+    expect(restored.steps).toHaveLength(2)
+    expect(restored.mode).toBe('pro')
+    expect(restored.running).toBe(false)
+  })
 
-simulateSend("thread-a", "message 1");
-simulateSend("thread-a", "message 2");
-simulateSwitch("thread-a", "thread-b");
-simulateSend("thread-b", "message B");
+  it('abort only affects target thread', () => {
+    const env = createTestEnv()
+    const streamA = env.createStream('A')
+    const streamB = env.createStream('B')
 
-assert(buffers.get("thread-a")!.messages.length === 2, "thread-a buffer preserved after switch");
-assert(buffers.get("thread-b")!.messages.length === 1, "thread-b has own buffer");
+    streamA.messages.push('msg-A')
+    streamB.running = false // simulate abort on B
 
-// Simulate background stream completing after switch
-simulateSend("thread-a", "background completion");
-assert(buffers.get("thread-a")!.messages.length === 3, "background stream saves to correct buffer");
-assert(buffers.get("thread-b")!.messages.length === 1, "thread-b unaffected by thread-a's background stream");
+    expect(streamB.running).toBe(false)
+    expect(streamA.messages).toHaveLength(1)
+  })
 
-console.log("\n🔀 Concurrent Thread Isolation Tests\n");
+  it('per-thread lock prevents double send on same thread', () => {
+    const env = createTestEnv()
+    env.createStream('C')
 
-// Simulate the per-thread stream architecture
-interface MockStream {
-  messages: string[];
-  steps: string[];
-  running: boolean;
-  mode: string | null;
-}
+    const existingC = env.streams.get('C')
+    const canSendOnC = !existingC?.running
+    expect(canSendOnC).toBe(false)
 
-const streams = new Map<string, MockStream>();
-let activeThread = "default";
-
-function createStream(threadId: string): MockStream {
-  const s: MockStream = { messages: [], steps: [], running: true, mode: null };
-  streams.set(threadId, s);
-  return s;
-}
-
-function switchTo(threadId: string) {
-  activeThread = threadId;
-}
-
-// Test: Two threads can run concurrently
-const streamA = createStream("A");
-const streamB = createStream("B");
-
-streamA.messages.push("user-A");
-streamA.mode = "pro";
-streamA.steps.push("thinking-A");
-
-// Switch to B while A is still running
-switchTo("B");
-streamB.messages.push("user-B");
-streamB.mode = "flash";
-
-assert(streamA.running && streamB.running, "both threads running concurrently");
-assert(streamA.messages.length === 1 && streamA.messages[0] === "user-A", "thread-A messages isolated");
-assert(streamB.messages.length === 1 && streamB.messages[0] === "user-B", "thread-B messages isolated");
-assert(streamA.mode === "pro" && streamB.mode === "flash", "execution modes isolated per thread");
-
-// Test: Background thread completes independently
-streamA.messages.push("assistant-A-response");
-streamA.running = false;
-streamA.steps.push("done-A");
-
-assert(!streamA.running && streamB.running, "thread-A finished while B still running");
-assert(streamA.messages.length === 2, "thread-A accumulated messages in background");
-assert(activeThread === "B", "active thread unchanged by background completion");
-
-// Test: Switching back restores full state
-switchTo("A");
-const restoredA = streams.get("A")!;
-assert(restoredA.messages.length === 2, "switch back restores messages");
-assert(restoredA.steps.length === 2, "switch back restores steps (reasoning trace)");
-assert(restoredA.mode === "pro", "switch back restores execution mode");
-assert(!restoredA.running, "switch back shows correct streaming state");
-
-// Test: Per-thread abort only affects target thread
-streamB.running = false; // simulate abort on B
-assert(!streamB.running, "abort only affects target thread");
-assert(restoredA.messages.length === 2, "abort on B does not affect A");
-
-// Test: New send on same thread blocked while running
-const streamC = createStream("C");
-assert(streamC.running, "new stream starts running");
-// Attempting to send again on C should be blocked (per-thread lock)
-const existingC = streams.get("C");
-const canSendOnC = !(existingC?.running);
-assert(!canSendOnC, "per-thread lock prevents double send on same thread");
-// But sending on D should work
-const canSendOnD = !streams.get("D")?.running;
-assert(canSendOnD, "different thread is not blocked by C's lock");
-
-// ── Summary ──
-
-console.log(`\n${"─".repeat(40)}`);
-console.log(`Results: ${passed} passed, ${failed} failed`);
-if (failed > 0) {
-  process.exit(1);
-}
-console.log("All tests passed! ✅\n");
+    const canSendOnD = !env.streams.get('D')?.running
+    expect(canSendOnD).toBe(true)
+  })
+})

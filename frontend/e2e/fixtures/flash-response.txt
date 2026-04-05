@@ -1,0 +1,32 @@
+id: 1
+event: thinking
+data: {"node": "router", "content": "正在分析您的问题..."}
+
+id: 2
+event: mode_selected
+data: {"mode": "flash", "reason": "自动选择 ⚡ 快速回答 模式"}
+
+id: 3
+event: thinking
+data: {"node": "router", "content": "决策: ⚡ 快速回答"}
+
+id: 4
+event: thinking
+data: {"node": "respond", "content": "正在生成回复..."}
+
+id: 5
+event: content
+data: {"content": "2"}
+
+id: 6
+event: mode_selected
+data: {"mode": "flash", "reason": "自动选择 ⚡ 快速回答 模式"}
+
+id: 7
+event: thinking
+data: {"node": "router", "content": "决策: ⚡ 快速回答"}
+
+id: 8
+event: done
+data: {}
+

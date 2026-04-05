@@ -1,14 +1,32 @@
-"""E2E tests with real GLM API -- verifies the full pipeline works."""
+"""E2E tests with real GLM API -- verifies the full pipeline works.
+
+Requires GLM_API_KEY to be set in the environment or .env file.
+Skipped automatically in CI or when the key is absent.
+"""
 from __future__ import annotations
 
 import os
 import json
+from pathlib import Path
+
 import pytest
 
-# Set API key before any application imports
-os.environ["GLM_API_KEY"] = "9f08c9290439424dbab49b6d57f8fd71.haFZtLj9tiyGqEAJ"
+# Load .env so API key is available even when running pytest directly
+_env_file = Path(__file__).parent.parent / ".env"
+if _env_file.exists():
+    for line in _env_file.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip())
+
+requires_llm = pytest.mark.skipif(
+    not os.getenv("GLM_API_KEY"),
+    reason="Requires GLM_API_KEY environment variable",
+)
 
 
+@requires_llm
 class TestModelFactory:
     """Test that GLM model can be created and invoked."""
 
@@ -29,6 +47,7 @@ class TestModelFactory:
         print(f"GLM response: {response.content}")
 
 
+@requires_llm
 class TestDirectResponse:
     """Test the Router -> Respond path (simple questions)."""
 
@@ -55,6 +74,7 @@ class TestDirectResponse:
         assert "2" in content
 
 
+@requires_llm
 class TestSkillMatching:
     """Test skill routing with real queries."""
 
@@ -77,6 +97,7 @@ class TestSkillMatching:
         assert any(s.name == "code-review" for s in candidates)
 
 
+@requires_llm
 class TestMemoryPipeline:
     """Test memory extract -> score -> merge -> inject with real LLM."""
 
@@ -114,6 +135,7 @@ class TestMemoryPipeline:
             assert len(prompt) > 0
 
 
+@requires_llm
 class TestFullChatEndpoint:
     """Test the FastAPI chat endpoint with SSE streaming."""
 

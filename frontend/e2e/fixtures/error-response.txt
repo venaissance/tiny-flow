@@ -1,0 +1,8 @@
+id: 1
+event: thinking
+data: {"node": "router", "content": "正在分析您的问题..."}
+
+id: 2
+event: error
+data: {"error": "模型服务暂时不可用，请稍后重试"}
+

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 from unittest.mock import MagicMock
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 
 class MockChatModel:
@@ -21,6 +21,25 @@ class MockChatModel:
     def bind_tools(self, tools, **kwargs):
         """Return self for chaining -- tool calls are mocked via responses."""
         return self
+
+
+def make_state(message="hello", **overrides):
+    """Factory for a minimal GraphState dict suitable for node tests."""
+    base = {
+        "messages": [HumanMessage(content=message)],
+        "route": None,
+        "pending_tasks": [],
+        "completed_tasks": [],
+        "previous_round_output": "",
+        "iteration": 0,
+        "memory_context": "",
+        "metadata": {},
+        "last_tool_calls": [],
+        "todos": [],
+        "execution_mode": "",
+    }
+    base.update(overrides)
+    return base
 
 
 @pytest.fixture

@@ -1,0 +1,1534 @@
+id: 1
+event: thinking
+data: {"node": "router", "content": "正在分析您的问题..."}
+
+id: 2
+event: mode_selected
+data: {"mode": "thinking", "reason": "自动选择 🧠 深度推理 模式"}
+
+id: 3
+event: thinking
+data: {"node": "router", "content": "决策: 🧠 深度推理"}
+
+id: 4
+event: thinking
+data: {"node": "think_respond", "content": "正在深度推理..."}
+
+id: 5
+event: content
+data: {"content": "<th"}
+
+id: 6
+event: content
+data: {"content": "inking"}
+
+id: 7
+event: content
+data: {"content": ">\n-"}
+
+id: 8
+event: content
+data: {"content": " "}
+
+id: 9
+event: content
+data: {"content": "问题的关键"}
+
+id: 10
+event: content
+data: {"content": "点"}
+
+id: 11
+event: content
+data: {"content": "："}
+
+id: 12
+event: content
+data: {"content": "天空"}
+
+id: 13
+event: content
+data: {"content": "为什么"}
+
+id: 14
+event: content
+data: {"content": "呈现"}
+
+id: 15
+event: content
+data: {"content": "蓝色"}
+
+id: 16
+event: content
+data: {"content": "。\n-"}
+
+id: 17
+event: content
+data: {"content": " 不同"}
+
+id: 18
+event: content
+data: {"content": "角度"}
+
+id: 19
+event: content
+data: {"content": "的分析"}
+
+id: 20
+event: content
+data: {"content": "：\n "}
+
+id: 21
+event: content
+data: {"content": " -"}
+
+id: 22
+event: content
+data: {"content": " 物"}
+
+id: 23
+event: content
+data: {"content": "理学"}
+
+id: 24
+event: content
+data: {"content": "角度"}
+
+id: 25
+event: content
+data: {"content": "："}
+
+id: 26
+event: content
+data: {"content": "涉及"}
+
+id: 27
+event: content
+data: {"content": "光的"}
+
+id: 28
+event: content
+data: {"content": "散射"}
+
+id: 29
+event: content
+data: {"content": "现象"}
+
+id: 30
+event: content
+data: {"content": "，"}
+
+id: 31
+event: content
+data: {"content": "特别是"}
+
+id: 32
+event: content
+data: {"content": "瑞"}
+
+id: 33
+event: content
+data: {"content": "利"}
+
+id: 34
+event: content
+data: {"content": "散射"}
+
+id: 35
+event: content
+data: {"content": "。\n "}
+
+id: 36
+event: content
+data: {"content": " -"}
+
+id: 37
+event: content
+data: {"content": " 大"}
+
+id: 38
+event: content
+data: {"content": "气"}
+
+id: 39
+event: content
+data: {"content": "成分"}
+
+id: 40
+event: content
+data: {"content": "："}
+
+id: 41
+event: content
+data: {"content": "氮"}
+
+id: 42
+event: content
+data: {"content": "气和"}
+
+id: 43
+event: content
+data: {"content": "氧气"}
+
+id: 44
+event: content
+data: {"content": "对"}
+
+id: 45
+event: content
+data: {"content": "光"}
+
+id: 46
+event: content
+data: {"content": "的影响"}
+
+id: 47
+event: content
+data: {"content": "。\n "}
+
+id: 48
+event: content
+data: {"content": " -"}
+
+id: 49
+event: content
+data: {"content": " 光"}
+
+id: 50
+event: content
+data: {"content": "的"}
+
+id: 51
+event: content
+data: {"content": "波长"}
+
+id: 52
+event: content
+data: {"content": "："}
+
+id: 53
+event: content
+data: {"content": "不同"}
+
+id: 54
+event: content
+data: {"content": "波"}
+
+id: 55
+event: content
+data: {"content": "长的"}
+
+id: 56
+event: content
+data: {"content": "光"}
+
+id: 57
+event: content
+data: {"content": "在"}
+
+id: 58
+event: content
+data: {"content": "散射"}
+
+id: 59
+event: content
+data: {"content": "中的"}
+
+id: 60
+event: content
+data: {"content": "表现"}
+
+id: 61
+event: content
+data: {"content": "。\n-"}
+
+id: 62
+event: content
+data: {"content": " 推"}
+
+id: 63
+event: content
+data: {"content": "理"}
+
+id: 64
+event: content
+data: {"content": "链"}
+
+id: 65
+event: content
+data: {"content": "路"}
+
+id: 66
+event: content
+data: {"content": "：\n "}
+
+id: 67
+event: content
+data: {"content": " "}
+
+id: 68
+event: content
+data: {"content": "1"}
+
+id: 69
+event: content
+data: {"content": "."}
+
+id: 70
+event: content
+data: {"content": " 太"}
+
+id: 71
+event: content
+data: {"content": "阳光"}
+
+id: 72
+event: content
+data: {"content": "包含"}
+
+id: 73
+event: content
+data: {"content": "各种"}
+
+id: 74
+event: content
+data: {"content": "波"}
+
+id: 75
+event: content
+data: {"content": "长的"}
+
+id: 76
+event: content
+data: {"content": "光"}
+
+id: 77
+event: content
+data: {"content": "，"}
+
+id: 78
+event: content
+data: {"content": "当"}
+
+id: 79
+event: content
+data: {"content": "它"}
+
+id: 80
+event: content
+data: {"content": "进入"}
+
+id: 81
+event: content
+data: {"content": "地球"}
+
+id: 82
+event: content
+data: {"content": "大气"}
+
+id: 83
+event: content
+data: {"content": "层"}
+
+id: 84
+event: content
+data: {"content": "时"}
+
+id: 85
+event: content
+data: {"content": "，"}
+
+id: 86
+event: content
+data: {"content": "会"}
+
+id: 87
+event: content
+data: {"content": "与"}
+
+id: 88
+event: content
+data: {"content": "大气"}
+
+id: 89
+event: content
+data: {"content": "中的"}
+
+id: 90
+event: content
+data: {"content": "分子"}
+
+id: 91
+event: content
+data: {"content": "（"}
+
+id: 92
+event: content
+data: {"content": "主要是"}
+
+id: 93
+event: content
+data: {"content": "氮"}
+
+id: 94
+event: content
+data: {"content": "气和"}
+
+id: 95
+event: content
+data: {"content": "氧气"}
+
+id: 96
+event: content
+data: {"content": "）"}
+
+id: 97
+event: content
+data: {"content": "发生"}
+
+id: 98
+event: content
+data: {"content": "相互作用"}
+
+id: 99
+event: content
+data: {"content": "。\n "}
+
+id: 100
+event: content
+data: {"content": " "}
+
+id: 101
+event: content
+data: {"content": "2"}
+
+id: 102
+event: content
+data: {"content": "."}
+
+id: 103
+event: content
+data: {"content": " 根"}
+
+id: 104
+event: content
+data: {"content": "据"}
+
+id: 105
+event: content
+data: {"content": "瑞"}
+
+id: 106
+event: content
+data: {"content": "利"}
+
+id: 107
+event: content
+data: {"content": "散射"}
+
+id: 108
+event: content
+data: {"content": "定律"}
+
+id: 109
+event: content
+data: {"content": "，"}
+
+id: 110
+event: content
+data: {"content": "短"}
+
+id: 111
+event: content
+data: {"content": "波"}
+
+id: 112
+event: content
+data: {"content": "长的"}
+
+id: 113
+event: content
+data: {"content": "光"}
+
+id: 114
+event: content
+data: {"content": "（"}
+
+id: 115
+event: content
+data: {"content": "蓝色"}
+
+id: 116
+event: content
+data: {"content": "和"}
+
+id: 117
+event: content
+data: {"content": "紫色"}
+
+id: 118
+event: content
+data: {"content": "）"}
+
+id: 119
+event: content
+data: {"content": "比"}
+
+id: 120
+event: content
+data: {"content": "长"}
+
+id: 121
+event: content
+data: {"content": "波"}
+
+id: 122
+event: content
+data: {"content": "长的"}
+
+id: 123
+event: content
+data: {"content": "光"}
+
+id: 124
+event: content
+data: {"content": "（"}
+
+id: 125
+event: content
+data: {"content": "红色"}
+
+id: 126
+event: content
+data: {"content": "和"}
+
+id: 127
+event: content
+data: {"content": "橙色"}
+
+id: 128
+event: content
+data: {"content": "）"}
+
+id: 129
+event: content
+data: {"content": "更容易"}
+
+id: 130
+event: content
+data: {"content": "被"}
+
+id: 131
+event: content
+data: {"content": "散射"}
+
+id: 132
+event: content
+data: {"content": "。\n "}
+
+id: 133
+event: content
+data: {"content": " "}
+
+id: 134
+event: content
+data: {"content": "3"}
+
+id: 135
+event: content
+data: {"content": "."}
+
+id: 136
+event: content
+data: {"content": " 人"}
+
+id: 137
+event: content
+data: {"content": "眼"}
+
+id: 138
+event: content
+data: {"content": "对"}
+
+id: 139
+event: content
+data: {"content": "蓝色的"}
+
+id: 140
+event: content
+data: {"content": "敏感"}
+
+id: 141
+event: content
+data: {"content": "度"}
+
+id: 142
+event: content
+data: {"content": "较高"}
+
+id: 143
+event: content
+data: {"content": "，"}
+
+id: 144
+event: content
+data: {"content": "而"}
+
+id: 145
+event: content
+data: {"content": "紫"}
+
+id: 146
+event: content
+data: {"content": "色的"}
+
+id: 147
+event: content
+data: {"content": "散射"}
+
+id: 148
+event: content
+data: {"content": "虽然"}
+
+id: 149
+event: content
+data: {"content": "更"}
+
+id: 150
+event: content
+data: {"content": "强烈"}
+
+id: 151
+event: content
+data: {"content": "，"}
+
+id: 152
+event: content
+data: {"content": "但"}
+
+id: 153
+event: content
+data: {"content": "大部分"}
+
+id: 154
+event: content
+data: {"content": "被"}
+
+id: 155
+event: content
+data: {"content": "高层"}
+
+id: 156
+event: content
+data: {"content": "大气"}
+
+id: 157
+event: content
+data: {"content": "吸收"}
+
+id: 158
+event: content
+data: {"content": "或"}
+
+id: 159
+event: content
+data: {"content": "反射"}
+
+id: 160
+event: content
+data: {"content": "，"}
+
+id: 161
+event: content
+data: {"content": "因此"}
+
+id: 162
+event: content
+data: {"content": "我们看到"}
+
+id: 163
+event: content
+data: {"content": "的天空"}
+
+id: 164
+event: content
+data: {"content": "是"}
+
+id: 165
+event: content
+data: {"content": "蓝色的"}
+
+id: 166
+event: content
+data: {"content": "。\n "}
+
+id: 167
+event: content
+data: {"content": " "}
+
+id: 168
+event: content
+data: {"content": "4"}
+
+id: 169
+event: content
+data: {"content": "."}
+
+id: 170
+event: content
+data: {"content": " 白"}
+
+id: 171
+event: content
+data: {"content": "天"}
+
+id: 172
+event: content
+data: {"content": "太阳"}
+
+id: 173
+event: content
+data: {"content": "光"}
+
+id: 174
+event: content
+data: {"content": "穿透"}
+
+id: 175
+event: content
+data: {"content": "大气"}
+
+id: 176
+event: content
+data: {"content": "层"}
+
+id: 177
+event: content
+data: {"content": "时"}
+
+id: 178
+event: content
+data: {"content": "，"}
+
+id: 179
+event: content
+data: {"content": "蓝色"}
+
+id: 180
+event: content
+data: {"content": "光"}
+
+id: 181
+event: content
+data: {"content": "被"}
+
+id: 182
+event: content
+data: {"content": "广泛"}
+
+id: 183
+event: content
+data: {"content": "散射"}
+
+id: 184
+event: content
+data: {"content": "，"}
+
+id: 185
+event: content
+data: {"content": "使得"}
+
+id: 186
+event: content
+data: {"content": "天空"}
+
+id: 187
+event: content
+data: {"content": "呈现"}
+
+id: 188
+event: content
+data: {"content": "蓝色"}
+
+id: 189
+event: content
+data: {"content": "。\n "}
+
+id: 190
+event: content
+data: {"content": " "}
+
+id: 191
+event: content
+data: {"content": "5"}
+
+id: 192
+event: content
+data: {"content": "."}
+
+id: 193
+event: content
+data: {"content": " 在"}
+
+id: 194
+event: content
+data: {"content": "日出"}
+
+id: 195
+event: content
+data: {"content": "和"}
+
+id: 196
+event: content
+data: {"content": "日落"}
+
+id: 197
+event: content
+data: {"content": "时"}
+
+id: 198
+event: content
+data: {"content": "，"}
+
+id: 199
+event: content
+data: {"content": "太阳"}
+
+id: 200
+event: content
+data: {"content": "光"}
+
+id: 201
+event: content
+data: {"content": "穿过"}
+
+id: 202
+event: content
+data: {"content": "更"}
+
+id: 203
+event: content
+data: {"content": "厚"}
+
+id: 204
+event: content
+data: {"content": "的大"}
+
+id: 205
+event: content
+data: {"content": "气"}
+
+id: 206
+event: content
+data: {"content": "层"}
+
+id: 207
+event: content
+data: {"content": "，"}
+
+id: 208
+event: content
+data: {"content": "大部分"}
+
+id: 209
+event: content
+data: {"content": "蓝色"}
+
+id: 210
+event: content
+data: {"content": "光"}
+
+id: 211
+event: content
+data: {"content": "被"}
+
+id: 212
+event: content
+data: {"content": "散射"}
+
+id: 213
+event: content
+data: {"content": "掉"}
+
+id: 214
+event: content
+data: {"content": "，"}
+
+id: 215
+event: content
+data: {"content": "剩下"}
+
+id: 216
+event: content
+data: {"content": "红"}
+
+id: 217
+event: content
+data: {"content": "橙"}
+
+id: 218
+event: content
+data: {"content": "色的"}
+
+id: 219
+event: content
+data: {"content": "光"}
+
+id: 220
+event: content
+data: {"content": "，"}
+
+id: 221
+event: content
+data: {"content": "使得"}
+
+id: 222
+event: content
+data: {"content": "天空"}
+
+id: 223
+event: content
+data: {"content": "呈现"}
+
+id: 224
+event: content
+data: {"content": "这些"}
+
+: ping - 2026-04-05 15:34:23.594480+00:00
+
+id: 225
+event: content
+data: {"content": "颜色"}
+
+id: 226
+event: content
+data: {"content": "。\n</"}
+
+id: 227
+event: content
+data: {"content": "thinking"}
+
+id: 228
+event: content
+data: {"content": ">\n\n天空"}
+
+id: 229
+event: content
+data: {"content": "呈现"}
+
+id: 230
+event: content
+data: {"content": "蓝色"}
+
+id: 231
+event: content
+data: {"content": "是由于"}
+
+id: 232
+event: content
+data: {"content": "瑞"}
+
+id: 233
+event: content
+data: {"content": "利"}
+
+id: 234
+event: content
+data: {"content": "散射"}
+
+id: 235
+event: content
+data: {"content": "现象"}
+
+id: 236
+event: content
+data: {"content": "。"}
+
+id: 237
+event: content
+data: {"content": "太阳"}
+
+id: 238
+event: content
+data: {"content": "光"}
+
+id: 239
+event: content
+data: {"content": "包含"}
+
+id: 240
+event: content
+data: {"content": "各种"}
+
+id: 241
+event: content
+data: {"content": "波"}
+
+id: 242
+event: content
+data: {"content": "长的"}
+
+id: 243
+event: content
+data: {"content": "光"}
+
+id: 244
+event: content
+data: {"content": "，"}
+
+id: 245
+event: content
+data: {"content": "当"}
+
+id: 246
+event: content
+data: {"content": "它"}
+
+id: 247
+event: content
+data: {"content": "进入"}
+
+id: 248
+event: content
+data: {"content": "地球"}
+
+id: 249
+event: content
+data: {"content": "大气"}
+
+id: 250
+event: content
+data: {"content": "层"}
+
+id: 251
+event: content
+data: {"content": "时"}
+
+id: 252
+event: content
+data: {"content": "，"}
+
+id: 253
+event: content
+data: {"content": "会"}
+
+id: 254
+event: content
+data: {"content": "与"}
+
+id: 255
+event: content
+data: {"content": "大气"}
+
+id: 256
+event: content
+data: {"content": "中的"}
+
+id: 257
+event: content
+data: {"content": "氮"}
+
+id: 258
+event: content
+data: {"content": "气和"}
+
+id: 259
+event: content
+data: {"content": "氧气"}
+
+id: 260
+event: content
+data: {"content": "分子"}
+
+id: 261
+event: content
+data: {"content": "发生"}
+
+id: 262
+event: content
+data: {"content": "相互作用"}
+
+id: 263
+event: content
+data: {"content": "。"}
+
+id: 264
+event: content
+data: {"content": "根据"}
+
+id: 265
+event: content
+data: {"content": "瑞"}
+
+id: 266
+event: content
+data: {"content": "利"}
+
+id: 267
+event: content
+data: {"content": "散射"}
+
+id: 268
+event: content
+data: {"content": "定律"}
+
+id: 269
+event: content
+data: {"content": "，"}
+
+id: 270
+event: content
+data: {"content": "短"}
+
+id: 271
+event: content
+data: {"content": "波"}
+
+id: 272
+event: content
+data: {"content": "长的"}
+
+id: 273
+event: content
+data: {"content": "光"}
+
+id: 274
+event: content
+data: {"content": "（"}
+
+id: 275
+event: content
+data: {"content": "蓝色"}
+
+id: 276
+event: content
+data: {"content": "和"}
+
+id: 277
+event: content
+data: {"content": "紫色"}
+
+id: 278
+event: content
+data: {"content": "）"}
+
+id: 279
+event: content
+data: {"content": "比"}
+
+id: 280
+event: content
+data: {"content": "长"}
+
+id: 281
+event: content
+data: {"content": "波"}
+
+id: 282
+event: content
+data: {"content": "长的"}
+
+id: 283
+event: content
+data: {"content": "光"}
+
+id: 284
+event: content
+data: {"content": "（"}
+
+id: 285
+event: content
+data: {"content": "红色"}
+
+id: 286
+event: content
+data: {"content": "和"}
+
+id: 287
+event: content
+data: {"content": "橙色"}
+
+id: 288
+event: content
+data: {"content": "）"}
+
+id: 289
+event: content
+data: {"content": "更容易"}
+
+id: 290
+event: content
+data: {"content": "被"}
+
+id: 291
+event: content
+data: {"content": "散射"}
+
+id: 292
+event: content
+data: {"content": "。"}
+
+id: 293
+event: content
+data: {"content": "虽然"}
+
+id: 294
+event: content
+data: {"content": "紫色"}
+
+id: 295
+event: content
+data: {"content": "光的"}
+
+id: 296
+event: content
+data: {"content": "散射"}
+
+id: 297
+event: content
+data: {"content": "更"}
+
+id: 298
+event: content
+data: {"content": "强烈"}
+
+id: 299
+event: content
+data: {"content": "，"}
+
+id: 300
+event: content
+data: {"content": "但由于"}
+
+id: 301
+event: content
+data: {"content": "人"}
+
+id: 302
+event: content
+data: {"content": "眼"}
+
+id: 303
+event: content
+data: {"content": "对"}
+
+id: 304
+event: content
+data: {"content": "蓝色的"}
+
+id: 305
+event: content
+data: {"content": "敏感"}
+
+id: 306
+event: content
+data: {"content": "度"}
+
+id: 307
+event: content
+data: {"content": "较高"}
+
+id: 308
+event: content
+data: {"content": "，"}
+
+id: 309
+event: content
+data: {"content": "且"}
+
+id: 310
+event: content
+data: {"content": "大部分"}
+
+id: 311
+event: content
+data: {"content": "紫色"}
+
+id: 312
+event: content
+data: {"content": "光"}
+
+id: 313
+event: content
+data: {"content": "被"}
+
+id: 314
+event: content
+data: {"content": "高层"}
+
+id: 315
+event: content
+data: {"content": "大气"}
+
+id: 316
+event: content
+data: {"content": "吸收"}
+
+id: 317
+event: content
+data: {"content": "或"}
+
+id: 318
+event: content
+data: {"content": "反射"}
+
+id: 319
+event: content
+data: {"content": "，"}
+
+id: 320
+event: content
+data: {"content": "我们"}
+
+id: 321
+event: content
+data: {"content": "看到的"}
+
+id: 322
+event: content
+data: {"content": " sky"}
+
+id: 323
+event: content
+data: {"content": " 是"}
+
+id: 324
+event: content
+data: {"content": "蓝色的"}
+
+id: 325
+event: content
+data: {"content": "。"}
+
+id: 326
+event: content
+data: {"content": "在"}
+
+id: 327
+event: content
+data: {"content": "白天"}
+
+id: 328
+event: content
+data: {"content": "，"}
+
+id: 329
+event: content
+data: {"content": "太阳"}
+
+id: 330
+event: content
+data: {"content": "光"}
+
+id: 331
+event: content
+data: {"content": "穿透"}
+
+id: 332
+event: content
+data: {"content": "大气"}
+
+id: 333
+event: content
+data: {"content": "层"}
+
+id: 334
+event: content
+data: {"content": "时"}
+
+id: 335
+event: content
+data: {"content": "，"}
+
+id: 336
+event: content
+data: {"content": "蓝色"}
+
+id: 337
+event: content
+data: {"content": "光"}
+
+id: 338
+event: content
+data: {"content": "被"}
+
+id: 339
+event: content
+data: {"content": "广泛"}
+
+id: 340
+event: content
+data: {"content": "散射"}
+
+id: 341
+event: content
+data: {"content": "，"}
+
+id: 342
+event: content
+data: {"content": "使得"}
+
+id: 343
+event: content
+data: {"content": "天空"}
+
+id: 344
+event: content
+data: {"content": "呈现"}
+
+id: 345
+event: content
+data: {"content": "蓝色"}
+
+id: 346
+event: content
+data: {"content": "。"}
+
+id: 347
+event: content
+data: {"content": "在"}
+
+id: 348
+event: content
+data: {"content": "日出"}
+
+id: 349
+event: content
+data: {"content": "和"}
+
+id: 350
+event: content
+data: {"content": "日落"}
+
+id: 351
+event: content
+data: {"content": "时"}
+
+id: 352
+event: content
+data: {"content": "，"}
+
+id: 353
+event: content
+data: {"content": "太阳"}
+
+id: 354
+event: content
+data: {"content": "光"}
+
+id: 355
+event: content
+data: {"content": "穿过"}
+
+id: 356
+event: content
+data: {"content": "更"}
+
+id: 357
+event: content
+data: {"content": "厚"}
+
+id: 358
+event: content
+data: {"content": "的大"}
+
+id: 359
+event: content
+data: {"content": "气"}
+
+id: 360
+event: content
+data: {"content": "层"}
+
+id: 361
+event: content
+data: {"content": "，"}
+
+id: 362
+event: content
+data: {"content": "大部分"}
+
+id: 363
+event: content
+data: {"content": "蓝色"}
+
+id: 364
+event: content
+data: {"content": "光"}
+
+id: 365
+event: content
+data: {"content": "被"}
+
+id: 366
+event: content
+data: {"content": "散射"}
+
+id: 367
+event: content
+data: {"content": "掉"}
+
+id: 368
+event: content
+data: {"content": "，"}
+
+id: 369
+event: content
+data: {"content": "剩下"}
+
+id: 370
+event: content
+data: {"content": "红"}
+
+id: 371
+event: content
+data: {"content": "橙"}
+
+id: 372
+event: content
+data: {"content": "色的"}
+
+id: 373
+event: content
+data: {"content": "光"}
+
+id: 374
+event: content
+data: {"content": "，"}
+
+id: 375
+event: content
+data: {"content": "使得"}
+
+id: 376
+event: content
+data: {"content": "天空"}
+
+id: 377
+event: content
+data: {"content": "呈现"}
+
+id: 378
+event: content
+data: {"content": "这些"}
+
+id: 379
+event: content
+data: {"content": "颜色"}
+
+id: 380
+event: content
+data: {"content": "。"}
+
+id: 381
+event: mode_selected
+data: {"mode": "thinking", "reason": "自动选择 🧠 深度推理 模式"}
+
+id: 382
+event: thinking
+data: {"node": "router", "content": "决策: 🧠 深度推理"}
+
+id: 383
+event: done
+data: {}
+

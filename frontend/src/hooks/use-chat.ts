@@ -25,7 +25,7 @@ interface ThreadStream {
 /**
  * Parse SSE lines from a text chunk. Handles event:/data: pairs.
  */
-function parseSSELines(
+export function parseSSELines(
   lines: string[],
   currentEvent: { value: SSEEventType },
   callback: (event: SSEEventType, data: unknown) => void,
