@@ -49,6 +49,9 @@ jobs:
       - name: Lint
         run: cd frontend && pnpm check
 
+      - name: Build
+        run: cd frontend && pnpm build
+
       - name: Run tests
         run: cd frontend && pnpm test:run
 

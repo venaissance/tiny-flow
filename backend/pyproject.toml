@@ -26,3 +26,11 @@ dev = [
     "playwright>=1.40.0",
     "pytest-playwright>=0.7.0",
 ]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
