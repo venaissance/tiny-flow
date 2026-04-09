@@ -327,7 +327,7 @@ class TestReflectorNode:
     def test_ultra_mode_passthrough(self):
         state = make_state(execution_mode="ultra")
         result = reflector_node(state, MockChatModel())
-        assert result == {}
+        assert result == {"route": None}
 
     def test_pending_tasks_continue(self):
         tasks = [TaskSpec(description="remaining")]

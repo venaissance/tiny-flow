@@ -115,7 +115,18 @@ def _keyword_route_fallback_4way(query: str) -> dict | None:
       4. Research keywords → "pro"
       5. No match → None  (caller defaults to flash)
     """
-    # --- 0. Tool/skill trigger keywords → pro (HIGHEST PRIORITY) ---
+    # --- 0. Multi-step compound tasks → ultra ---
+    # "先...然后..." or "调研...制作..." patterns = two independent subtasks
+    compound_patterns = ["先", "然后", "接着", "之后再"]
+    has_compound = sum(1 for p in compound_patterns if p in query) >= 2 or ("先" in query and "然后" in query)
+    if has_compound:
+        return {
+            "route": "subagent",
+            "execution_mode": "ultra",
+            "metadata": {"subtasks": [query]},
+        }
+
+    # --- 0b. Tool/skill trigger keywords → pro ---
     tool_keywords = [
         "pulse", "日报", "简报", "新闻速递",
         "ppt", "PPT", "演示文稿", "slides", "制作幻灯片",

@@ -38,7 +38,7 @@ def reflector_node(
     """Review completed tasks and decide: respond or loop back."""
     # Ultra mode: Merge node already synthesized the response, just pass through
     if state.get("execution_mode") == "ultra":
-        return {}
+        return {"route": None}
 
     # Pro mode: if there are still pending tasks, loop back to execute
     pending = state.get("pending_tasks", [])
@@ -100,4 +100,4 @@ def _make_final_response(completed: list[TaskResult], state: GraphState) -> dict
     else:
         errors = [t.error for t in completed if t.error]
         content = "任务执行遇到问题：\n" + "\n".join(errors) if errors else "无法完成请求。"
-    return {"messages": [AIMessage(content=content)]}
+    return {"messages": [AIMessage(content=content)], "route": None}

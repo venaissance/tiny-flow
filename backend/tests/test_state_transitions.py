@@ -301,7 +301,7 @@ class TestReflectorNode:
 
         result = reflector_node(state, model, max_iterations=3)
 
-        assert result == {}
+        assert result == {"route": None}
 
     def test_max_iterations_terminates(self):
         from core.graph.nodes.reflector import reflector_node

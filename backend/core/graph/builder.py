@@ -180,4 +180,4 @@ def build_graph(
     })
 
     checkpointer = InMemorySaver()
-    return graph.compile(checkpointer=checkpointer)
+    return graph.compile(checkpointer=checkpointer, recursion_limit=50)
