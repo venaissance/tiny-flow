@@ -308,13 +308,19 @@ export default function WorkspacePage() {
                         <p className="mt-1 text-sm text-gray-400">输入问题开始研究，或试试下面的例子</p>
                       </div>
                       <div className="flex flex-wrap justify-center gap-2">
-                        {["做一个 todolist 网页", "画一个数据可视化图表", "研究 AI 最新趋势"].map((prompt) => (
+                        {[
+                          { label: "⚡ 什么是 ReAct Agent？", prompt: "什么是 ReAct Agent？" },
+                          { label: "📋 搜索 Claude Code 更新", prompt: "帮我搜索一下 Claude Code 最新的更新内容" },
+                          { label: "🚀 并行调研三个话题", prompt: "分别调研以下三个话题：1. Claude 4.5 最新能力 2. Cursor 和 Claude Code 的对比 3. 2026年 AI Coding 工具市场格局" },
+                          { label: "📡 Pulse 科技日报", prompt: "帮我生成今日的 Pulse 科技日报" },
+                          { label: "🎯 调研+制作 PPT", prompt: "先调研 AI Agent 2026 年最新趋势，然后用这些调研结果制作一个演示文稿" },
+                        ].map(({ label, prompt }) => (
                           <button
-                            key={prompt}
+                            key={label}
                             onClick={() => handleSend(prompt)}
                             className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 active:scale-95 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                           >
-                            {prompt}
+                            {label}
                           </button>
                         ))}
                       </div>
