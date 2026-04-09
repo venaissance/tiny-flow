@@ -115,15 +115,15 @@ def _keyword_route_fallback_4way(query: str) -> dict | None:
       4. Research keywords → "pro"
       5. No match → None  (caller defaults to flash)
     """
-    # --- 0. Multi-step compound tasks → ultra ---
-    # "先...然后..." or "调研...制作..." patterns = two independent subtasks
-    compound_patterns = ["先", "然后", "接着", "之后再"]
-    has_compound = sum(1 for p in compound_patterns if p in query) >= 2 or ("先" in query and "然后" in query)
-    if has_compound:
+    # --- 0. Sequential compound tasks (先...然后...) → pro ---
+    # These have dependency between steps, must run sequentially
+    sequential_patterns = ["先", "然后", "接着", "之后再"]
+    has_sequential = ("先" in query and any(p in query for p in ["然后", "接着", "之后再"]))
+    if has_sequential:
         return {
             "route": "subagent",
-            "execution_mode": "ultra",
-            "metadata": {"subtasks": [query]},
+            "execution_mode": "pro",
+            "metadata": {"task_description": query, "estimated_steps": 3},
         }
 
     # --- 0b. Tool/skill trigger keywords → pro ---
