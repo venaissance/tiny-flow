@@ -62,7 +62,7 @@ async def chat(request: ChatRequest):
             "todos": [],
             "execution_mode": "",
         }
-        config = {"configurable": {"thread_id": request.thread_id}}
+        config = {"configurable": {"thread_id": request.thread_id}, "recursion_limit": 50}
 
         try:
             # Track which nodes we've seen to send progress events once
