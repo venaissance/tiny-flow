@@ -23,7 +23,7 @@ def dispatch_node(state: GraphState) -> dict:
                 TaskSpec(
                     type="subagent",
                     description=st,
-                    tools=["web_search"],
+                    tools=["web_search", "run_skill"],
                 )
                 for st in subtasks
             ]
@@ -41,7 +41,7 @@ def dispatch_node(state: GraphState) -> dict:
         type="subagent",
         description=description,
         agent_type=meta.get("suggested_agent_type", "general"),
-        tools=["web_search"],
+        tools=["web_search", "run_skill"],
     )
 
     return {"pending_tasks": [task]}

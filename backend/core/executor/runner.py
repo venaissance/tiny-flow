@@ -1,7 +1,6 @@
-"""SubagentRunner — two-phase: deterministic search + LLM report generation."""
+"""SubagentRunner — ReAct Agent: Observe → Think → Act → Observe loop."""
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import time
@@ -14,10 +13,13 @@ from .task import SubagentResult, SubagentStatus
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_MAX_ITERATIONS = 6
+
 
 def _get_tool_by_name(name: str) -> BaseTool | None:
     from core.tools.web_search import web_search
-    return {"web_search": web_search}.get(name)
+    from core.tools.run_skill import run_skill
+    return {"web_search": web_search, "run_skill": run_skill}.get(name)
 
 
 def resolve_tools(tool_names: list[str] | None) -> list[BaseTool]:
@@ -27,120 +29,147 @@ def resolve_tools(tool_names: list[str] | None) -> list[BaseTool]:
 
 
 class SubagentRunner:
-    """Two-phase research runner:
-    Phase 1: Deterministic search (always runs, no model dependency)
-    Phase 2: LLM report generation from search results
+    """ReAct Agent runner.
+
+    With tools: runs a Think→Act→Observe loop until the LLM produces a
+    final answer (no tool_calls) or max_iterations is reached.
+
+    Without tools: calls the model directly for a single response.
     """
 
     def __init__(
         self,
         model: Any,
         system_prompt: str = "",
-        tools: list[BaseTool] | None = None,
+        tools: list | None = None,
         tool_names: list[str] | None = None,
+        max_iterations: int = DEFAULT_MAX_ITERATIONS,
         **kwargs: Any,
     ):
         self.model = model
         self.system_prompt = system_prompt
         self.tools = tools or resolve_tools(tool_names)
+        self.max_iterations = max_iterations
         self.tool_call_log: list[dict] = []
+        self._tool_map: dict[str, Any] = {t.name: t for t in self.tools}
 
     def run(self, task_description: str, task_id: str = "unknown") -> SubagentResult:
-        result = SubagentResult(task_id=task_id, status=SubagentStatus.RUNNING, started_at=time.time())
+        result = SubagentResult(
+            task_id=task_id,
+            status=SubagentStatus.RUNNING,
+            started_at=time.time(),
+        )
         try:
             if self.tools:
-                return asyncio.run(self._research_and_report(task_description, result))
+                self._react_loop(task_description, result)
             else:
-                return asyncio.run(self._direct_response(task_description, result))
+                self._direct_response(task_description, result)
         except Exception as e:
             logger.exception(f"SubagentRunner failed: {e}")
             result.status = SubagentStatus.FAILED
             result.error = str(e)
             result.completed_at = time.time()
-            return result
+        return result
 
-    async def _direct_response(self, task: str, result: SubagentResult) -> SubagentResult:
-        """No tools — just call the model directly."""
-        messages = []
+    def _direct_response(self, task: str, result: SubagentResult) -> None:
+        """No tools — call the model directly."""
+        messages: list = []
         if self.system_prompt:
             messages.append(SystemMessage(content=self.system_prompt))
         messages.append(HumanMessage(content=task))
-        resp = await asyncio.to_thread(
-            self.model.invoke,
-            messages,
-        )
+
+        resp = self.model.invoke(messages)
         result.output = resp.content if isinstance(resp.content, str) else str(resp.content)
         result.status = SubagentStatus.COMPLETED
         result.completed_at = time.time()
-        return result
 
-    async def _research_and_report(self, task: str, result: SubagentResult) -> SubagentResult:
-        """Phase 1: Search → Phase 2: Report. Deterministic, no model tool-calling needed."""
-        search_tool = next((t for t in self.tools if t.name == "web_search"), None)
-        if not search_tool:
-            return await self._direct_response(task, result)
-
-        # --- Phase 1: Deterministic search ---
-        # Generate 2-3 search queries from the task
-        queries = self._generate_queries(task)
-        all_results = []
-
-        for query in queries:
-            logger.info(f"Searching: {query}")
-            self.tool_call_log.append({"name": "web_search", "args": {"query": query}})
-            try:
-                search_result = await asyncio.to_thread(search_tool.invoke, {"query": query})
-                search_str = str(search_result)
-                self.tool_call_log[-1]["result_preview"] = search_str[:200]
-                all_results.append(f"## 搜索 \"{query}\" 的结果:\n{search_str}")
-            except Exception as e:
-                logger.warning(f"Search failed for '{query}': {e}")
-                self.tool_call_log[-1]["result_preview"] = f"Error: {e}"
-
-        if not all_results:
-            return await self._direct_response(task, result)
-
-        # --- Phase 2: LLM report generation ---
-        combined = "\n\n---\n\n".join(all_results)
-        prompt = f"""基于以下搜索结果，撰写一份关于「{task}」的结构化中文 Markdown 研究报告。
-
-要求：
-- 使用搜索结果中的真实数据和事实，不要编造
-- 包含标题、摘要、正文章节、数据表格（如适用）、结论
-- 引用来源 URL
-
-搜索结果：
-{combined}"""
-
-        try:
-            resp = await asyncio.to_thread(
-                self.model.invoke,
-                [SystemMessage(content="你是专业研究分析师，基于搜索结果撰写高质量报告。"),
-                 HumanMessage(content=prompt)],
+    def _react_loop(self, task: str, result: SubagentResult) -> None:
+        """ReAct loop: Think → Act → Observe, repeat until done."""
+        messages: list = []
+        if self.system_prompt:
+            messages.append(SystemMessage(content=self.system_prompt))
+        else:
+            tool_descriptions = "\n".join(
+                f"- {t.name}: {getattr(t, 'description', 'No description')}"
+                for t in self.tools
             )
-            result.output = resp.content if isinstance(resp.content, str) else str(resp.content)
-        except Exception as e:
-            result.output = f"报告生成失败: {e}\n\n原始搜索结果:\n{combined}"
+            messages.append(SystemMessage(
+                content=(
+                    "你是一个智能助手，可以使用以下工具完成任务。"
+                    "每次只调用一个工具，根据结果决定下一步。"
+                    "当你认为任务完成时，直接回复最终答案（不调用工具）。\n\n"
+                    f"可用工具：\n{tool_descriptions}"
+                )
+            ))
+        messages.append(HumanMessage(content=task))
 
+        for iteration in range(self.max_iterations):
+            logger.info(f"ReAct iteration {iteration + 1}/{self.max_iterations}")
+
+            resp = self.model.invoke(messages)
+            messages.append(resp)
+
+            # Check if LLM produced tool calls
+            tool_calls = getattr(resp, "tool_calls", None) or []
+            if not tool_calls:
+                # No tool calls → final answer
+                result.output = resp.content if isinstance(resp.content, str) else str(resp.content)
+                result.status = SubagentStatus.COMPLETED
+                result.completed_at = time.time()
+                return
+
+            # Execute each tool call
+            for tc in tool_calls:
+                tool_name = tc["name"]
+                tool_args = tc["args"]
+                call_id = tc.get("id", f"call_{iteration}")
+
+                log_entry = {"name": tool_name, "args": tool_args}
+
+                tool = self._tool_map.get(tool_name)
+                if tool is None:
+                    error_msg = f"Tool '{tool_name}' not found"
+                    logger.warning(error_msg)
+                    log_entry["error"] = error_msg
+                    log_entry["result_preview"] = f"Error: {error_msg}"
+                    self.tool_call_log.append(log_entry)
+                    # Feed error back to LLM so it can adapt
+                    from langchain_core.messages import ToolMessage
+                    messages.append(ToolMessage(
+                        content=json.dumps({"error": error_msg}),
+                        tool_call_id=call_id,
+                    ))
+                    continue
+
+                try:
+                    tool_result = tool.invoke(tool_args)
+                    tool_result_str = str(tool_result)
+                    log_entry["result_preview"] = tool_result_str[:200]
+                    self.tool_call_log.append(log_entry)
+                    from langchain_core.messages import ToolMessage
+                    messages.append(ToolMessage(
+                        content=tool_result_str,
+                        tool_call_id=call_id,
+                    ))
+                except Exception as e:
+                    error_msg = f"Tool error: {e}"
+                    logger.warning(f"Tool {tool_name} failed: {e}")
+                    log_entry["error"] = str(e)
+                    log_entry["result_preview"] = error_msg
+                    self.tool_call_log.append(log_entry)
+                    from langchain_core.messages import ToolMessage
+                    messages.append(ToolMessage(
+                        content=json.dumps({"error": str(e)}),
+                        tool_call_id=call_id,
+                    ))
+
+        # Max iterations reached — force a final summary
+        logger.warning(f"ReAct hit max_iterations ({self.max_iterations}), forcing summary")
+        messages.append(HumanMessage(
+            content="已达到最大迭代次数，请根据目前收集到的信息给出最终回答。"
+        ))
+        resp = self.model.invoke(messages)
+        result.output = resp.content if isinstance(resp.content, str) else str(resp.content)
         result.status = SubagentStatus.COMPLETED
         result.messages = [{"tool_calls": self.tool_call_log}]
         result.completed_at = time.time()
-        return result
-
-    def _generate_queries(self, task: str) -> list[str]:
-        """Generate 2-3 search queries from the task description."""
-        # Simple approach: use the task itself + variations
-        base = task.strip()
-        if len(base) > 60:
-            base = base[:60]
-
-        queries = [base]
-
-        # Add a more specific query
-        keywords = [w for w in base.split() if len(w) > 1]
-        if len(keywords) >= 3:
-            queries.append(" ".join(keywords[:4]) + " 数据")
-        if len(keywords) >= 2:
-            queries.append(" ".join(keywords[:3]) + " 最新")
-
-        return queries[:3]
