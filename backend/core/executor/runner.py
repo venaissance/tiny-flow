@@ -53,6 +53,22 @@ class SubagentRunner:
         self.tool_call_log: list[dict] = []
         self._tool_map: dict[str, Any] = {t.name: t for t in self.tools}
 
+        # Bind tools to model so it can produce structured tool_calls
+        self._bound_model = self._bind_tools_to_model()
+
+    def _bind_tools_to_model(self):
+        """Bind LangChain tools to model for structured tool_calls output."""
+        if not self.tools:
+            return self.model
+        # Filter to real LangChain BaseTool instances that support bind_tools
+        lc_tools = [t for t in self.tools if isinstance(t, BaseTool)]
+        if lc_tools and hasattr(self.model, "bind_tools"):
+            try:
+                return self.model.bind_tools(lc_tools)
+            except Exception as e:
+                logger.warning(f"bind_tools failed: {e}, using unbound model")
+        return self.model
+
     def run(self, task_description: str, task_id: str = "unknown") -> SubagentResult:
         result = SubagentResult(
             task_id=task_id,
@@ -106,7 +122,7 @@ class SubagentRunner:
         for iteration in range(self.max_iterations):
             logger.info(f"ReAct iteration {iteration + 1}/{self.max_iterations}")
 
-            resp = self.model.invoke(messages)
+            resp = self._bound_model.invoke(messages)
             messages.append(resp)
 
             # Check if LLM produced tool calls
@@ -168,7 +184,7 @@ class SubagentRunner:
         messages.append(HumanMessage(
             content="已达到最大迭代次数，请根据目前收集到的信息给出最终回答。"
         ))
-        resp = self.model.invoke(messages)
+        resp = self._bound_model.invoke(messages)
         result.output = resp.content if isinstance(resp.content, str) else str(resp.content)
         result.status = SubagentStatus.COMPLETED
         result.messages = [{"tool_calls": self.tool_call_log}]
