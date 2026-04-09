@@ -202,7 +202,12 @@ def _extract_node_events(node_name: str, output: dict, evt) -> list[dict]:
             dur = getattr(task, "duration_seconds", 0) if hasattr(task, "duration_seconds") else 0
             status = task.status if hasattr(task, "status") else task.get("status", "completed")
             tid = task.task_id if hasattr(task, "task_id") else task.get("task_id", "")
-            label = f"研究完成 ({dur:.1f}s)" if status == "completed" else "任务失败"
+            if status == "completed":
+                label = f"研究完成 ({dur:.1f}s)"
+            elif status == "timed_out":
+                label = "任务超时"
+            else:
+                label = "任务失败"
             events.append(evt("subagent_result", {"task_id": tid, "status": status, "label": label}))
 
     return events

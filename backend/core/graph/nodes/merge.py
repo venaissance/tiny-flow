@@ -26,6 +26,8 @@ def merge_node(state: GraphState, model: Any) -> dict:
     """Synthesize results from parallel subagent execution (Ultra mode)."""
     completed: list[TaskResult] = state.get("completed_tasks", [])
     outputs = [t.output for t in completed if t.output and t.status == "completed"]
+    timed_out = [t for t in completed if t.status == "timed_out"]
+    failed = [t for t in completed if t.status == "failed"]
 
     if not outputs:
         errors = [t.error for t in completed if t.error]
@@ -47,6 +49,15 @@ def merge_node(state: GraphState, model: Any) -> dict:
         f"--- 子任务 {i + 1} ---\n{out}" for i, out in enumerate(outputs)
     )
     prompt = f"用户原始问题：{user_query}\n\n以下是 {len(outputs)} 个并行子任务的执行结果：\n\n{numbered}"
+
+    # Append timeout/failure info so LLM and user know what's missing
+    notes = []
+    for t in timed_out:
+        notes.append(f"- 子任务 {t.task_id} 超时（{t.error}）")
+    for t in failed:
+        notes.append(f"- 子任务 {t.task_id} 失败（{t.error}）")
+    if notes:
+        prompt += "\n\n注意：以下子任务未完成：\n" + "\n".join(notes)
     try:
         response = model.invoke([
             SystemMessage(content=MERGE_SYSTEM_PROMPT),

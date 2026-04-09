@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed
 from typing import Any
 
+from core.executor.pool import get_executor_pool
 from core.executor.runner import SubagentRunner
 from core.executor.task import TaskResult, TaskSpec
 from core.graph.state import GraphState
 
 logger = logging.getLogger(__name__)
-
-_ULTRA_POOL = ThreadPoolExecutor(max_workers=3, thread_name_prefix="ultra")
 
 
 def _run_single_task(task: TaskSpec, model: Any) -> tuple[TaskResult, list[dict]]:
@@ -69,13 +68,16 @@ def execute_node(state: GraphState, model: Any) -> dict:
     all_tool_calls: list[dict] = []
 
     if mode == "ultra" and len(tasks) > 1:
-        # ── Ultra: all tasks in parallel ──
+        # ── Ultra: all tasks in parallel via ExecutorPool ──
         for t in pending_todos:
             t.status = "in_progress"
 
+        pool = get_executor_pool()
         logger.info(f"Ultra mode: executing {len(tasks)} tasks in parallel")
         futures = {
-            _ULTRA_POOL.submit(_run_single_task, task, model): (task, i)
+            pool.submit_scheduled(
+                _run_single_task, task.timeout or 300, task, model,
+            ): (task, i)
             for i, task in enumerate(tasks)
         }
         for future in as_completed(futures):
@@ -86,6 +88,11 @@ def execute_node(state: GraphState, model: Any) -> dict:
                 all_tool_calls.extend(tool_calls)
                 if idx < len(pending_todos):
                     pending_todos[idx].status = "completed" if result.status == "completed" else "failed"
+            except TimeoutError:
+                logger.warning(f"Task {task.id} timed out after {task.timeout}s")
+                all_results.append(TaskResult(task_id=task.id, status="timed_out", error=f"Timed out after {task.timeout}s"))
+                if idx < len(pending_todos):
+                    pending_todos[idx].status = "failed"
             except Exception as e:
                 logger.exception(f"Task {task.id} failed: {e}")
                 all_results.append(TaskResult(task_id=task.id, status="failed", error=str(e)))
