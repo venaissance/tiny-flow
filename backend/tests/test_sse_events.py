@@ -331,8 +331,8 @@ class TestContextCompacted:
 # ---------------------------------------------------------------------------
 
 class TestReflectorContent:
-    def test_reflector_emits_content_lines(self):
-        """Reflector node output messages are emitted as content events line by line."""
+    def test_reflector_does_not_duplicate_content(self):
+        """Reflector messages are NOT re-emitted (already streamed via execute)."""
         evt = _make_evt()
 
         class FakeMessage:
@@ -342,11 +342,7 @@ class TestReflectorContent:
         events = _extract_node_events("reflector", output, evt)
 
         content_events = [e for e in events if e["event"] == "content"]
-        assert len(content_events) == 3
-        texts = [json.loads(e["data"])["content"] for e in content_events]
-        assert texts[0] == "Line 1\n"
-        assert texts[1] == "Line 2\n"
-        assert texts[2] == "Line 3\n"
+        assert len(content_events) == 0  # No duplicate emission
 
     def test_non_reflector_does_not_emit_content(self):
         """Only the reflector node emits content from messages in output."""

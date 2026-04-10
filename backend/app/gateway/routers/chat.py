@@ -146,13 +146,9 @@ def _extract_node_events(node_name: str, output: dict, evt) -> list[dict]:
     """Extract SSE events from a node's structured output."""
     events = []
 
-    # Reflector/execute messages — these nodes don't call LLM, so content wasn't
-    # streamed via on_chat_model_stream. Emit line-by-line here.
-    if node_name in ("reflector",) and "messages" in output:
-        for msg in output["messages"]:
-            full = msg.content if hasattr(msg, "content") else str(msg)
-            for line in full.split("\n"):
-                events.append(evt("content", {"content": line + "\n"}))
+    # NOTE: Reflector messages are NOT re-emitted here — their content was
+    # already streamed via on_chat_model_stream during the execute phase.
+    # Emitting again would duplicate the output.
 
     # Execution mode selected (4-way router)
     if "execution_mode" in output and output["execution_mode"]:
