@@ -99,11 +99,23 @@ class SubagentRunner:
         result.status = SubagentStatus.COMPLETED
         result.completed_at = time.time()
 
+    def _get_current_date_context(self) -> str:
+        """Get current date/time context string."""
+        from datetime import datetime
+        try:
+            from zoneinfo import ZoneInfo
+            now = datetime.now(ZoneInfo("Asia/Shanghai"))
+        except Exception:
+            now = datetime.now()
+        weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+        return f"当前时间：{now.strftime('%Y年%m月%d日')} {weekdays[now.weekday()]} {now.strftime('%H:%M')} (Asia/Shanghai)"
+
     def _react_loop(self, task: str, result: SubagentResult) -> None:
         """ReAct loop: Think → Act → Observe, repeat until done."""
+        date_ctx = self._get_current_date_context()
         messages: list = []
         if self.system_prompt:
-            messages.append(SystemMessage(content=self.system_prompt))
+            messages.append(SystemMessage(content=f"{date_ctx}\n\n{self.system_prompt}"))
         else:
             tool_descriptions = "\n".join(
                 f"- {t.name}: {getattr(t, 'description', 'No description')}"
@@ -111,7 +123,9 @@ class SubagentRunner:
             )
             messages.append(SystemMessage(
                 content=(
+                    f"{date_ctx}\n\n"
                     "你是一个智能助手，可以使用以下工具完成任务。"
+                    "搜索时必须在查询中包含今天的日期以获取最新信息。"
                     "每次只调用一个工具，根据结果决定下一步。"
                     "当你认为任务完成时，直接回复最终答案（不调用工具）。\n\n"
                     f"可用工具：\n{tool_descriptions}"

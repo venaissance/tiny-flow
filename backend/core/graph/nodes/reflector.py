@@ -100,4 +100,8 @@ def _make_final_response(completed: list[TaskResult], state: GraphState) -> dict
     else:
         errors = [t.error for t in completed if t.error]
         content = "任务执行遇到问题：\n" + "\n".join(errors) if errors else "无法完成请求。"
-    return {"messages": [AIMessage(content=content)], "route": None}
+    return {
+        "messages": [AIMessage(content=content)],
+        "route": None,
+        "pending_tasks": [],  # Clear to prevent any re-execution
+    }
