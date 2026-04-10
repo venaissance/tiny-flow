@@ -72,7 +72,14 @@ def _extract_user_query(state: GraphState) -> str:
 
 def _parse_plan(text: str) -> tuple[list[str], bool]:
     """Parse steps and parallel flag from LLM output."""
-    cleaned = re.sub(r"```(?:json)?\s*", "", text).strip().rstrip("`")
+    # Strip <think>...</think> blocks (MiniMax M2.7)
+    cleaned = re.sub(r"<think>[\s\S]*?</think>", "", text).strip()
+    # Strip markdown code fences
+    cleaned = re.sub(r"```(?:json)?\s*", "", cleaned).strip().rstrip("`")
+    # Extract JSON object if surrounded by other text
+    match = re.search(r'\{[^{}]*\}', cleaned)
+    if match:
+        cleaned = match.group(0)
     data = json.loads(cleaned)
     steps = data.get("steps", [])
     parallel = data.get("parallel", False)
