@@ -71,6 +71,8 @@ async def chat(request: ChatRequest):
             current_llm_node: str | None = None
             # Buffer to detect node-level outputs (for tool calls, tasks, etc.)
             pending_node_output: dict | None = None
+            # Track <think>...</think> blocks for filtering (MiniMax M2.7)
+            in_think = False
 
             async for event in graph.astream_events(
                 input_state, config=config, version="v2"
@@ -100,8 +102,20 @@ async def chat(request: ChatRequest):
                     chunk = event.get("data", {}).get("chunk")
                     if chunk and hasattr(chunk, "content") and chunk.content:
                         content = chunk.content
+                        # Filter <think>...</think> reasoning blocks (MiniMax M2.7)
+                        # Track in_think state across streaming chunks
+                        if "<think>" in content:
+                            in_think = True
+                            content = content.split("<think>")[0]
+                        if in_think:
+                            if "</think>" in content:
+                                in_think = False
+                                content = content.split("</think>", 1)[-1]
+                            else:
+                                continue  # Still inside think block, skip
+                        if not content:
+                            continue
                         # Only stream content from respond/reflector nodes (final output)
-                        # Router node tokens are internal decisions, not user-facing
                         tags = event.get("tags", [])
                         parent = event.get("metadata", {}).get("langgraph_node", "")
                         if parent in ("respond", "think_respond", "reflector", "execute", "merge"):

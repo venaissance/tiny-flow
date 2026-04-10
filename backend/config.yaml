@@ -1,5 +1,5 @@
 model:
-  default: "glm-4-flash-250414"
+  default: "MiniMax-M2.7"
   providers:
     - name: openai
       api_key_env: OPENAI_API_KEY
@@ -7,6 +7,8 @@ model:
       api_key_env: ANTHROPIC_API_KEY
     - name: glm
       api_key_env: GLM_API_KEY
+    - name: minimax
+      api_key_env: MINIMAX_API_KEY
 
 executor:
   scheduler_workers: 3

@@ -72,6 +72,17 @@ def create_chat_model(
             api_key=os.environ.get("GLM_API_KEY", ""),
             **kwargs,
         )
+    elif provider == "minimax":
+        import os
+        from langchain_openai import ChatOpenAI
+
+        return ChatOpenAI(
+            model=model_name,
+            streaming=True,
+            base_url="https://api.minimaxi.com/v1",
+            api_key=os.environ.get("MINIMAX_API_KEY", ""),
+            **kwargs,
+        )
     else:
         from langchain_openai import ChatOpenAI
 

@@ -26,4 +26,6 @@ def detect_provider(model_name: str) -> str:
         return "claude"
     if name_lower.startswith("glm"):
         return "glm"
+    if name_lower.startswith("minimax"):
+        return "minimax"
     return "openai"
