@@ -164,19 +164,16 @@ def build_graph(
     # Merge → Reflector
     graph.add_edge("merge", "reflector")
 
-    # Reflector → END, loop to execute (pending tasks), or loop to plan
+    # Reflector → END or loop to execute (pending tasks)
     def reflector_decision(state: GraphState) -> str:
         route = state.get("route")
         if route == "continue_execute":
             return "execute"  # More pending tasks → loop back
-        if route == "needs_more_work":
-            return "plan"
-        return "end"
+        return "end"  # "done" or anything else → terminate
 
     graph.add_conditional_edges("reflector", reflector_decision, {
         "end": END,
         "execute": "execute",
-        "plan": "plan",
     })
 
     checkpointer = InMemorySaver()
