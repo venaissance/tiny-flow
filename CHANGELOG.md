@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.0] - 2026-04-11
+
+### Added
+- ReAct Agent architecture for subagents — Observe-Think-Act loop with multi-tool support
+- MiniMax M2.7 model support as default LLM provider
+- Skill tool integration — agents can invoke local skills (pulse, frontend-slides, etc.)
+- ExecutorPool replacing bare ThreadPool with timeout support for ultra mode
+- Dispatch node for ultra mode parallel task distribution
+- Skill node for skill-matched query routing
+- Skill awareness in plan generation
+- Current date injection into ReAct prompts
+- Pulse E2E test suite (298 tests) and ReAct agent test suite (303 tests)
+
+### Fixed
+- Reflector loop — use explicit 'done' route to prevent infinite loops
+- `<think>` block stripping for MiniMax M2.7 compatibility
+- Duplicate content emission from reflector node
+- Duplicate execution prevention in ReAct loop
+- Recursion limit configuration (set in graph config, not compile)
+- Sequential compound tasks correctly routed to pro mode
+
 ## [0.1.0] - 2026-04-06
 
 ### Added
