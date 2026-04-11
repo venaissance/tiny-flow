@@ -75,13 +75,13 @@ TinyFlow generates production-ready artifacts — from interactive slides to res
 </tr>
 <tr>
 <td align="center">
-<img src="docs/assets/pulse-daily-news-full.png" alt="Pulse Daily News" width="800" /><br/>
+<img src="docs/assets/pulse-daily-news-full.png" alt="Pulse Daily News" width="500" /><br/>
 <strong>Pulse Daily News</strong> -- AI & tech daily digest with stats, categories, and trend highlights
 </td>
 </tr>
 <tr>
 <td align="center">
-<img src="docs/assets/research-report-demo-full.png" alt="Research Report" width="800" /><br/>
+<img src="docs/assets/research-report-demo-full.png" alt="Research Report" width="500" /><br/>
 <strong>Deep Research Report</strong> -- React vs Vue vs Svelte comprehensive benchmark analysis
 </td>
 </tr>
@@ -342,13 +342,13 @@ TinyFlow 可生成高质量产物——从交互式幻灯片到深度研究报�
 </tr>
 <tr>
 <td align="center">
-<img src="docs/assets/pulse-daily-news-full.png" alt="Pulse 科技日报" width="800" /><br/>
+<img src="docs/assets/pulse-daily-news-full.png" alt="Pulse 科技日报" width="500" /><br/>
 <strong>Pulse 科技日报</strong> -- AI 与科技日报，含数据统计、分类聚合、趋势高亮
 </td>
 </tr>
 <tr>
 <td align="center">
-<img src="docs/assets/research-report-demo-full.png" alt="深度研究报告" width="800" /><br/>
+<img src="docs/assets/research-report-demo-full.png" alt="深度研究报告" width="500" /><br/>
 <strong>深度研究报告</strong> -- React vs Vue vs Svelte 综合性能基准分析
 </td>
 </tr>
