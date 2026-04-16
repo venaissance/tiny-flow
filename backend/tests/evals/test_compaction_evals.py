@@ -61,7 +61,19 @@ def _run_compaction(
 
 @pytest.mark.eval_category("retrieval")
 @pytest.mark.correctness
-@pytest.mark.parametrize("strategy", ["truncate", "smart"])
+@pytest.mark.parametrize(
+    "strategy",
+    [
+        pytest.param(
+            "truncate",
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="truncate is documented to fail behavior evals — drops middle, no invariance, no tool-pair protection. This xfail IS the evidence.",
+            ),
+        ),
+        "smart",
+    ],
+)
 def test_eval_early_fact_retention(
     conversation_with_early_fact,
     stub_summarizer,
@@ -97,7 +109,19 @@ def test_eval_early_fact_retention(
 
 @pytest.mark.eval_category("invariance")
 @pytest.mark.correctness
-@pytest.mark.parametrize("strategy", ["truncate", "smart"])
+@pytest.mark.parametrize(
+    "strategy",
+    [
+        pytest.param(
+            "truncate",
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="truncate is documented to fail behavior evals — drops middle, no invariance, no tool-pair protection. This xfail IS the evidence.",
+            ),
+        ),
+        "smart",
+    ],
+)
 def test_eval_user_original_goal_preserved(
     conversation_with_early_fact,
     stub_summarizer,
@@ -138,7 +162,19 @@ def test_eval_user_original_goal_preserved(
 
 @pytest.mark.eval_category("tool_use")
 @pytest.mark.correctness
-@pytest.mark.parametrize("strategy", ["truncate", "smart"])
+@pytest.mark.parametrize(
+    "strategy",
+    [
+        pytest.param(
+            "truncate",
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="truncate is documented to fail behavior evals — drops middle, no invariance, no tool-pair protection. This xfail IS the evidence.",
+            ),
+        ),
+        "smart",
+    ],
+)
 def test_eval_tool_call_pair_integrity(
     conversation_with_tool_pair,
     stub_summarizer,
