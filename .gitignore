@@ -42,3 +42,6 @@ htmlcov/
 *.log
 *.db
 tsconfig.tsbuildinfo
+
+# ── Git worktrees (experiments, isolated feature work) ──
+.worktrees/
