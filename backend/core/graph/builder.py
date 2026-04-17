@@ -20,6 +20,19 @@ from core.models.factory import create_chat_model, _load_config
 
 logger = logging.getLogger(__name__)
 
+# Shared checkpointer — must survive across requests so messages accumulate
+# per thread_id. Without this, each build_graph() creates a fresh InMemorySaver
+# and compaction never triggers (each request sees only 1 message).
+_shared_checkpointer = None
+
+
+def _get_shared_checkpointer():
+    global _shared_checkpointer
+    if _shared_checkpointer is None:
+        from langgraph.checkpoint.memory import InMemorySaver
+        _shared_checkpointer = InMemorySaver()
+    return _shared_checkpointer
+
 
 def _build_compaction_middleware() -> ContextCompactionMiddleware:
     """Build ContextCompactionMiddleware from config.yaml compaction section."""
@@ -48,7 +61,7 @@ def _build_middleware_stacks() -> dict[str, list]:
     """Build per-mode middleware stacks. Called once at graph construction."""
     compaction = _build_compaction_middleware()
     return {
-        "flash": [],
+        "flash": [compaction],
         "thinking": [compaction],
         "pro": [TodoMiddleware(), compaction, LoopDetectionMiddleware()],
         "ultra": [TodoMiddleware(), compaction, LoopDetectionMiddleware()],
@@ -74,8 +87,6 @@ def build_graph(
     memory_engine: MemoryEngine | None = None,
 ) -> Any:
     """Build and compile the agent graph with 4-way routing."""
-    from langgraph.checkpoint.memory import InMemorySaver
-
     model = create_chat_model(name=model_name)
     config = _load_config()
     max_iterations = config.get("graph", {}).get("max_iterations", 3)
@@ -107,7 +118,8 @@ def build_graph(
         return router_node(state_with_mem, model)
 
     def _respond(state: GraphState) -> dict:
-        return respond_node(state, model)
+        chain = _get_middleware_chain(state)
+        return chain.run_node("respond", state, lambda s: respond_node(s, model))
 
     def _think_respond(state: GraphState) -> dict:
         chain = _get_middleware_chain(state)
@@ -212,5 +224,4 @@ def build_graph(
         "execute": "execute",
     })
 
-    checkpointer = InMemorySaver()
-    return graph.compile(checkpointer=checkpointer)
+    return graph.compile(checkpointer=_get_shared_checkpointer())

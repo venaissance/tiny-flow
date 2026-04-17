@@ -88,7 +88,7 @@ def create_llm_summarizer(
     def _get_model():
         if not _model_cache:
             from core.models.factory import create_chat_model
-            _model_cache.append(create_chat_model(name=model_name, streaming=False))
+            _model_cache.append(create_chat_model(name=model_name))
         return _model_cache[0]
 
     def summarize(prior: str, messages: list[BaseMessage]) -> str:
@@ -209,6 +209,8 @@ class ContextCompactionMiddleware(Middleware):
     # ------------------------------------------------------------------
 
     def _apply_smart(self, state: dict, messages: list) -> dict:
+        original_len = len(messages)
+
         # Step 1 — bucketing: split into retention window and compaction zone
         if self.retention_window >= len(messages):
             retention = list(messages)
@@ -217,16 +219,41 @@ class ContextCompactionMiddleware(Middleware):
             retention = list(messages[-self.retention_window :])
             compaction_zone = list(messages[: -self.retention_window])
 
+        logger.info(
+            "ContextCompaction[smart] Step 1 · Bucketing: "
+            "%d total → %d in compaction zone, %d in retention window",
+            original_len, len(compaction_zone), len(retention),
+        )
+
         # Step 2 — invariance: find the user's first substantive message
         first_human = self._first_substantive_human_msg(messages)
+        if first_human:
+            logger.info(
+                "ContextCompaction[smart] Step 2 · Invariance: "
+                "preserving first substantive HumanMessage: %r",
+                str(first_human.content)[:80],
+            )
 
         # Step 3 — structure: drop orphan tool_responses before summary
+        retention_before = len(retention)
         retention = self._remove_orphan_tool_responses(retention, compaction_zone)
+        orphans_dropped = retention_before - len(retention)
+        if orphans_dropped:
+            logger.info(
+                "ContextCompaction[smart] Step 3 · Structure: "
+                "dropped %d orphan tool_response(s)", orphans_dropped,
+            )
 
         # Step 4 — summarize the compaction zone
         summarizer = self.summarizer or self._default_stub_summarizer
         metadata = dict(state.get("metadata") or {})
         prior_summary = str(metadata.get("context_summary") or "")
+
+        logger.info(
+            "ContextCompaction[smart] Step 4 · Summarizing %d messages "
+            "(prior summary: %d chars)...",
+            len(compaction_zone), len(prior_summary),
+        )
 
         try:
             new_summary = summarizer(prior_summary, compaction_zone)
@@ -238,11 +265,23 @@ class ContextCompactionMiddleware(Middleware):
             )
             return self._apply_truncate(state, messages)
 
+        logger.info(
+            "ContextCompaction[smart] Step 5 · Rolling summary: %d chars. "
+            "Preview: %r",
+            len(new_summary), new_summary[:150],
+        )
+
         # Step 5 — roll summary forward in metadata
         metadata["context_summary"] = new_summary
 
         # Step 6 — assemble final message list
-        summary_msg = SystemMessage(content=f"[Prior context summary]\n{new_summary}")
+        # Use HumanMessage with a clear "reference context" wrapper.
+        # - SystemMessage: MiniMax rejects it mid-conversation.
+        # - AIMessage: model treats it as its own prior response and repeats it.
+        # - HumanMessage with bracketed prefix: model reads it as context, not a question.
+        summary_msg = HumanMessage(
+            content=f"[以下是之前对话的上下文摘要，仅供参考，不要复述]\n{new_summary}"
+        )
         retention_ids = {id(m) for m in retention}
 
         new_messages: list[BaseMessage] = []

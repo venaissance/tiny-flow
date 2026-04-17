@@ -40,4 +40,5 @@ markers = [
     "eval_category(name): tag an eval by the agent behavior it measures (retrieval | invariance | tool_use | efficiency | routing)",
     "correctness: pass/fail assertion on agent output (did the agent do the right thing?)",
     "efficiency: measurement of latency, cost, or step count with thresholds",
+    "e2e: end-to-end tests hitting live API with real LLM calls (requires running backend)",
 ]

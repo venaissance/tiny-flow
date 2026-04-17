@@ -382,7 +382,7 @@ class TestSmartContextCompaction:
 
     # --- output shape ---
 
-    def test_smart_output_contains_system_summary_message(self):
+    def test_smart_output_contains_summary_message(self):
         msgs = [HumanMessage(content=f"m{i}") for i in range(30)]
         mw = ContextCompactionMiddleware(
             max_messages=10,
@@ -391,8 +391,9 @@ class TestSmartContextCompaction:
             summarizer=lambda prior, ms: "SUMMARY",
         )
         result = mw.before_node(self._make_state(msgs), "x")
-        system_messages = [
-            m for m in result["messages"] if isinstance(m, SystemMessage)
+        # Summary is injected as AIMessage (not SystemMessage) for provider compat
+        summary_messages = [
+            m for m in result["messages"]
+            if isinstance(m, AIMessage) and "SUMMARY" in str(m.content)
         ]
-        assert len(system_messages) == 1
-        assert "SUMMARY" in system_messages[0].content
+        assert len(summary_messages) == 1
