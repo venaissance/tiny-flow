@@ -55,21 +55,30 @@ _GREETING_MAX_LEN = 12  # a "你好，帮我..." at 20+ chars is NOT a pure gree
 
 SummarizerFn = Callable[[str, list[BaseMessage]], str]
 
-_SUMMARY_PROMPT_TEMPLATE = """你是上下文压缩助手。将历史摘要和新对话合并为一份简洁摘要。
+_SUMMARY_PROMPT_TEMPLATE = """你是上下文压缩助手。将历史摘要和新对话合并，提取关键事实。
 
-要求：
-1. 保留：用户意图、关键事实（文件名、数字、ID、URL）、重要决策、工具调用结果
-2. 丢弃：寒暄、重复确认、无信息量的闲聊
-3. 控制在 {max_chars} 字以内
-4. 用中文输出
+输出格式要求（严格遵守）：
+- 用「key: value」格式，每行一条事实
+- 只保留关键事实（人名、项目名、技术栈、数字、文件名、决策）
+- 丢弃寒暄、客套、重复确认
+- 不要写完整句子，不要写段落
+- 控制在 {max_chars} 字以内
 
-【历史摘要】
+示例输出：
+用户身份: 张三，前端开发
+项目名: ProjectPhoenix
+前端: React + TypeScript
+后端: FastAPI + PostgreSQL
+部署: AWS
+当前工作: LangGraph 智能体编排
+
+【历史事实】
 {prior}
 
 【新对话】
 {messages}
 
-【合并摘要】"""
+【合并后的事实清单】"""
 
 
 def create_llm_summarizer(
@@ -271,23 +280,19 @@ class ContextCompactionMiddleware(Middleware):
             len(new_summary), new_summary[:150],
         )
 
-        # Step 5 — roll summary forward in metadata
+        # Step 5 — roll summary forward in metadata (NOT as a message)
         metadata["context_summary"] = new_summary
 
         # Step 6 — assemble final message list
-        # Use HumanMessage with a clear "reference context" wrapper.
-        # - SystemMessage: MiniMax rejects it mid-conversation.
-        # - AIMessage: model treats it as its own prior response and repeats it.
-        # - HumanMessage with bracketed prefix: model reads it as context, not a question.
-        summary_msg = HumanMessage(
-            content=f"[以下是之前对话的上下文摘要，仅供参考，不要复述]\n{new_summary}"
-        )
+        # The middleware ONLY compresses messages. It does NOT inject the summary.
+        # Summary injection is the node function's job — respond_node and
+        # think_respond_node read metadata["context_summary"] and merge it into
+        # their SystemMessage at position 0. This separation keeps compaction
+        # model-agnostic: every LLM provider accepts SystemMessage at position 0.
         retention_ids = {id(m) for m in retention}
-
         new_messages: list[BaseMessage] = []
         if first_human is not None and id(first_human) not in retention_ids:
             new_messages.append(first_human)
-        new_messages.append(summary_msg)
         new_messages.extend(retention)
 
         state["messages"] = new_messages

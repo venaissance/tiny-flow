@@ -382,7 +382,10 @@ class TestSmartContextCompaction:
 
     # --- output shape ---
 
-    def test_smart_output_contains_summary_message(self):
+    def test_smart_stores_summary_in_metadata_not_messages(self):
+        """Summary goes to metadata, NOT into the message list.
+        Node functions read it and inject into system prompt at position 0.
+        This keeps the middleware model-agnostic."""
         msgs = [HumanMessage(content=f"m{i}") for i in range(30)]
         mw = ContextCompactionMiddleware(
             max_messages=10,
@@ -391,9 +394,8 @@ class TestSmartContextCompaction:
             summarizer=lambda prior, ms: "SUMMARY",
         )
         result = mw.before_node(self._make_state(msgs), "x")
-        # Summary is injected as AIMessage (not SystemMessage) for provider compat
-        summary_messages = [
-            m for m in result["messages"]
-            if isinstance(m, AIMessage) and "SUMMARY" in str(m.content)
-        ]
-        assert len(summary_messages) == 1
+        # Summary is in metadata, not in messages
+        assert result["metadata"]["context_summary"] == "SUMMARY"
+        # No summary message injected into the message list
+        for m in result["messages"]:
+            assert "SUMMARY" not in str(m.content)
