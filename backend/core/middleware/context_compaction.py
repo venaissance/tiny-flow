@@ -55,6 +55,79 @@ _GREETING_MAX_LEN = 12  # a "你好，帮我..." at 20+ chars is NOT a pure gree
 
 SummarizerFn = Callable[[str, list[BaseMessage]], str]
 
+_SUMMARY_PROMPT_TEMPLATE = """你是上下文压缩助手。将历史摘要和新对话合并为一份简洁摘要。
+
+要求：
+1. 保留：用户意图、关键事实（文件名、数字、ID、URL）、重要决策、工具调用结果
+2. 丢弃：寒暄、重复确认、无信息量的闲聊
+3. 控制在 {max_chars} 字以内
+4. 用中文输出
+
+【历史摘要】
+{prior}
+
+【新对话】
+{messages}
+
+【合并摘要】"""
+
+
+def create_llm_summarizer(
+    model_name: str = "glm-4-flash",
+    max_chars: int = 800,
+) -> SummarizerFn:
+    """Create a real LLM-backed summarizer for production use.
+
+    Lazily initializes the model on first call to avoid import-time overhead.
+    Each call sends (prior_summary + compaction_zone) to a cheap model,
+    receives a fixed-length summary. This is the "rolling" part — the output
+    replaces the prior summary, not appends to it.
+    """
+    _model_cache: list = []  # mutable container for lazy init
+
+    def _get_model():
+        if not _model_cache:
+            from core.models.factory import create_chat_model
+            _model_cache.append(create_chat_model(name=model_name, streaming=False))
+        return _model_cache[0]
+
+    def summarize(prior: str, messages: list[BaseMessage]) -> str:
+        # Format messages into readable text
+        lines: list[str] = []
+        for m in messages:
+            content = str(getattr(m, "content", "") or "").strip()
+            if not content:
+                continue
+            if isinstance(m, HumanMessage):
+                lines.append(f"用户: {content[:200]}")
+            elif isinstance(m, AIMessage):
+                if m.tool_calls:
+                    tool_names = [
+                        tc.get("name", "?") if isinstance(tc, dict) else getattr(tc, "name", "?")
+                        for tc in m.tool_calls
+                    ]
+                    lines.append(f"AI [调用工具: {', '.join(tool_names)}]: {content[:100]}")
+                else:
+                    lines.append(f"AI: {content[:200]}")
+            elif isinstance(m, ToolMessage):
+                lines.append(f"工具结果: {content[:150]}")
+
+        messages_text = "\n".join(lines) if lines else "（无新对话）"
+        prompt = _SUMMARY_PROMPT_TEMPLATE.format(
+            max_chars=max_chars,
+            prior=prior or "（无历史摘要）",
+            messages=messages_text,
+        )
+        model = _get_model()
+        response = model.invoke([HumanMessage(content=prompt)])
+        result = str(response.content or "").strip()
+        # Hard cap as safety net — LLMs don't always follow length constraints
+        if len(result) > max_chars * 1.5:
+            result = result[:max_chars] + "..."
+        return result
+
+    return summarize
+
 
 class ContextCompactionMiddleware(Middleware):
     """Bound the message list before every graph node.

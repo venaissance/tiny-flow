@@ -27,5 +27,12 @@ skills:
     - skills/
   hot_reload: true
 
+compaction:
+  strategy: "smart"              # "truncate" (original) or "smart" (Deep Agent SDK)
+  max_messages: 30               # trigger threshold
+  retention_window: 10           # tail messages kept verbatim
+  summary_model: "glm-4-flash"   # cheap + fast model for summarization
+  summary_max_chars: 800         # rolling summary length cap
+
 graph:
   max_iterations: 3

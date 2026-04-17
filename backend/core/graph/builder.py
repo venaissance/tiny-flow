@@ -12,24 +12,60 @@ from core.memory.engine import MemoryEngine
 from core.middleware.base import MiddlewareChain
 from core.middleware.todo import TodoMiddleware
 from core.middleware.loop_detection import LoopDetectionMiddleware
-from core.middleware.context_compaction import ContextCompactionMiddleware
+from core.middleware.context_compaction import (
+    ContextCompactionMiddleware,
+    create_llm_summarizer,
+)
 from core.models.factory import create_chat_model, _load_config
 
 logger = logging.getLogger(__name__)
 
-# Middleware stacks per execution mode
-MIDDLEWARE_STACKS = {
-    "flash": [],
-    "thinking": [ContextCompactionMiddleware()],
-    "pro": [TodoMiddleware(), ContextCompactionMiddleware(), LoopDetectionMiddleware()],
-    "ultra": [TodoMiddleware(), ContextCompactionMiddleware(), LoopDetectionMiddleware()],
-}
+
+def _build_compaction_middleware() -> ContextCompactionMiddleware:
+    """Build ContextCompactionMiddleware from config.yaml compaction section."""
+    config = _load_config()
+    cfg = config.get("compaction", {})
+    strategy = cfg.get("strategy", "truncate")
+
+    if strategy == "smart":
+        summarizer = create_llm_summarizer(
+            model_name=cfg.get("summary_model", "glm-4-flash"),
+            max_chars=cfg.get("summary_max_chars", 800),
+        )
+        return ContextCompactionMiddleware(
+            max_messages=cfg.get("max_messages", 30),
+            strategy="smart",
+            retention_window=cfg.get("retention_window", 10),
+            summarizer=summarizer,
+        )
+
+    return ContextCompactionMiddleware(
+        max_messages=cfg.get("max_messages", 30),
+    )
+
+
+def _build_middleware_stacks() -> dict[str, list]:
+    """Build per-mode middleware stacks. Called once at graph construction."""
+    compaction = _build_compaction_middleware()
+    return {
+        "flash": [],
+        "thinking": [compaction],
+        "pro": [TodoMiddleware(), compaction, LoopDetectionMiddleware()],
+        "ultra": [TodoMiddleware(), compaction, LoopDetectionMiddleware()],
+    }
+
+
+# Lazy-init: built on first access during graph construction
+_MIDDLEWARE_STACKS: dict[str, list] | None = None
 
 
 def _get_middleware_chain(state: dict) -> MiddlewareChain:
     """Get the appropriate middleware chain for the current execution mode."""
+    global _MIDDLEWARE_STACKS
+    if _MIDDLEWARE_STACKS is None:
+        _MIDDLEWARE_STACKS = _build_middleware_stacks()
     mode = state.get("execution_mode", "flash")
-    middlewares = MIDDLEWARE_STACKS.get(mode, [])
+    middlewares = _MIDDLEWARE_STACKS.get(mode, [])
     return MiddlewareChain(middlewares)
 
 
