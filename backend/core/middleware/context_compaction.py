@@ -173,6 +173,20 @@ class ContextCompactionMiddleware(Middleware):
             return self._apply_smart(state, messages)
         return self._apply_truncate(state, messages)
 
+    def after_node(self, state: dict, node_name: str, output: dict) -> dict:
+        """Propagate compaction metadata from state to node output so SSE
+        events can pick it up in _extract_node_events (chat.py)."""
+        if state.get("_context_compacted"):
+            output["_context_compacted"] = True
+            output["_original_count"] = state.get("_original_count", 0)
+            output["_compacted_count"] = state.get("_compacted_count", 0)
+            output["_compaction_strategy"] = self.strategy
+            summary = (state.get("metadata") or {}).get("context_summary", "")
+            output["_context_summary"] = summary[:300] if summary else ""
+            # Clear the flag so it doesn't fire again on the next node
+            state["_context_compacted"] = False
+        return output
+
     # ------------------------------------------------------------------
     # Strategy: truncate (original, backward compatible)
     # ------------------------------------------------------------------

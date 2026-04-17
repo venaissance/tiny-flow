@@ -179,7 +179,14 @@ export function useChat() {
             break;
           }
           case "context_compacted": {
-            addStep({ id: nanoid(), type: "thinking", content: `ℹ️ 对话较长，已压缩 ${raw.original_messages} 条消息为 ${raw.compacted_to} 条`, status: "completed", timestamp: Date.now() });
+            const strategy = (raw.strategy ?? "truncate") as string;
+            const strategyLabel = strategy === "smart" ? "🧠 智能压缩" : "✂️ 截断压缩";
+            const preview = (raw.summary_preview ?? "") as string;
+            let compactMsg = `${strategyLabel} · ${raw.original_messages} → ${raw.compacted_to} 条消息`;
+            if (preview) {
+              compactMsg += ` · 📝 ${preview.length > 100 ? preview.slice(0, 100) + "..." : preview}`;
+            }
+            addStep({ id: nanoid(), type: "thinking", content: compactMsg, status: "completed", timestamp: Date.now() });
             break;
           }
           case "error": {

@@ -181,9 +181,13 @@ def _extract_node_events(node_name: str, output: dict, evt) -> list[dict]:
 
     # Context compaction
     if output.get("_context_compacted"):
+        summary = output.get("_context_summary", "")
+        strategy = output.get("_compaction_strategy", "truncate")
         events.append(evt("context_compacted", {
             "original_messages": output.get("_original_count", 0),
             "compacted_to": output.get("_compacted_count", 0),
+            "strategy": strategy,
+            "summary_preview": summary[:200] if summary else "",
         }))
 
     # Pending tasks (dispatch created them)
