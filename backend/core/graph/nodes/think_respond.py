@@ -25,15 +25,12 @@ def think_respond_node(state: GraphState, model: Any) -> dict:
     """Response with visible reasoning chain."""
     messages = list(state["messages"])
     memory = state.get("memory_context", "")
-    summary = (state.get("metadata") or {}).get("context_summary", "")
 
     system_parts = [THINK_SYSTEM_PROMPT]
-    if summary:
-        system_parts.append(f"对话历史摘要（仅供参考，不要复述）:\n{summary}")
     if memory:
-        system_parts.append(f"已知用户信息:\n{memory}")
+        system_parts.append(f"\n已知用户信息:\n{memory}")
 
-    messages = [SystemMessage(content="\n\n".join(system_parts))] + messages
+    messages = [SystemMessage(content="".join(system_parts))] + messages
 
     response = model.invoke(messages)
     return {"messages": [response]}

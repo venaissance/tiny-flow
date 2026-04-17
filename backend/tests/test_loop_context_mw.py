@@ -382,10 +382,10 @@ class TestSmartContextCompaction:
 
     # --- output shape ---
 
-    def test_smart_stores_summary_in_metadata_not_messages(self):
-        """Summary goes to metadata, NOT into the message list.
-        Node functions read it and inject into system prompt at position 0.
-        This keeps the middleware model-agnostic."""
+    def test_smart_injects_summary_as_synthetic_conversation_pair(self):
+        """Summary is injected as a Human('请总结') + AI(summary) pair.
+        This prevents echo: the model sees the data as its own prior
+        response, so it won't repeat it."""
         msgs = [HumanMessage(content=f"m{i}") for i in range(30)]
         mw = ContextCompactionMiddleware(
             max_messages=10,
@@ -394,8 +394,21 @@ class TestSmartContextCompaction:
             summarizer=lambda prior, ms: "SUMMARY",
         )
         result = mw.before_node(self._make_state(msgs), "x")
-        # Summary is in metadata, not in messages
+        # Summary in metadata
         assert result["metadata"]["context_summary"] == "SUMMARY"
-        # No summary message injected into the message list
-        for m in result["messages"]:
-            assert "SUMMARY" not in str(m.content)
+        # Summary in messages as AIMessage (model's own "prior response")
+        ai_with_summary = [
+            m for m in result["messages"]
+            if isinstance(m, AIMessage) and "SUMMARY" in str(m.content)
+        ]
+        assert len(ai_with_summary) == 1
+        # Preceded by the synthetic ask
+        ask_idx = next(
+            i for i, m in enumerate(result["messages"])
+            if isinstance(m, HumanMessage) and "总结" in str(m.content)
+        )
+        ans_idx = next(
+            i for i, m in enumerate(result["messages"])
+            if m is ai_with_summary[0]
+        )
+        assert ans_idx == ask_idx + 1  # pair is adjacent

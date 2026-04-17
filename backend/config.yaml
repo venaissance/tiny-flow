@@ -1,5 +1,5 @@
 model:
-  default: "MiniMax-M2.7"
+  default: "GLM-5.1"
   providers:
     - name: openai
       api_key_env: OPENAI_API_KEY

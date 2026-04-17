@@ -280,19 +280,24 @@ class ContextCompactionMiddleware(Middleware):
             len(new_summary), new_summary[:150],
         )
 
-        # Step 5 — roll summary forward in metadata (NOT as a message)
+        # Step 5 — roll summary forward in metadata
         metadata["context_summary"] = new_summary
 
         # Step 6 — assemble final message list
-        # The middleware ONLY compresses messages. It does NOT inject the summary.
-        # Summary injection is the node function's job — respond_node and
-        # think_respond_node read metadata["context_summary"] and merge it into
-        # their SystemMessage at position 0. This separation keeps compaction
-        # model-agnostic: every LLM provider accepts SystemMessage at position 0.
+        # Inject the summary as a synthetic "user asked → AI answered" pair.
+        # WHY: models treat data in system prompts as "new info to acknowledge"
+        # and echo it. But models DON'T repeat their own prior responses. By
+        # putting the summary data on the AI side of a conversation turn, the
+        # model thinks "I already said this" → no echo. Model-agnostic.
+        summary_ask = HumanMessage(content="请简要总结我们之前的对话要点")
+        summary_ans = AIMessage(content=new_summary)
+
         retention_ids = {id(m) for m in retention}
         new_messages: list[BaseMessage] = []
         if first_human is not None and id(first_human) not in retention_ids:
             new_messages.append(first_human)
+        new_messages.append(summary_ask)
+        new_messages.append(summary_ans)
         new_messages.extend(retention)
 
         state["messages"] = new_messages
