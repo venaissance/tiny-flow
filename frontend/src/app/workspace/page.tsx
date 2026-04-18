@@ -230,36 +230,16 @@ export default function WorkspacePage() {
   return (
     <div className="flex h-screen">
       {/* ── Sidebar ── */}
-      <div className={cn("flex flex-col flex-shrink-0 transition-all duration-200", sidebarOpen ? "w-64" : "w-0")}>
+      <div className={cn("flex-shrink-0 transition-all duration-200", sidebarOpen ? "w-64" : "w-0")}>
         {sidebarOpen && (
-          <>
-            <ThreadSidebar
-              threads={threads}
-              activeThreadId={activeThreadId}
-              onSelect={handleSwitchThread}
-              onNew={handleNewThread}
-              onDelete={deleteThread}
-            />
-            {/* Memory Panel — fixed at sidebar bottom */}
-            {memoryFacts.length > 0 && (
-              <div className="border-t border-gray-200 bg-gradient-to-b from-blue-50/80 to-purple-50/60 p-3 dark:border-gray-700 dark:from-blue-950/30 dark:to-purple-950/20">
-                <div className="mb-2 flex items-center gap-1.5">
-                  <span className="text-sm">🧠</span>
-                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">用户记忆</span>
-                </div>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {memoryFacts.map((fact, i) => (
-                    <div
-                      key={i}
-                      className="rounded-md bg-white/70 px-2 py-1 text-xs text-gray-700 shadow-sm dark:bg-gray-800/50 dark:text-gray-300"
-                    >
-                      {fact}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
+          <ThreadSidebar
+            threads={threads}
+            activeThreadId={activeThreadId}
+            onSelect={handleSwitchThread}
+            onNew={handleNewThread}
+            onDelete={deleteThread}
+            memoryFacts={memoryFacts}
+          />
         )}
       </div>
 

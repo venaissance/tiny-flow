@@ -43,6 +43,7 @@ interface ThreadSidebarProps {
   onSelect: (threadId: string) => void;
   onNew: () => void;
   onDelete: (threadId: string) => void;
+  memoryFacts?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +127,7 @@ export function ThreadSidebar({
   onSelect,
   onNew,
   onDelete,
+  memoryFacts = [],
 }: ThreadSidebarProps) {
   return (
     <aside className="flex h-full w-full flex-col border-r border-gray-200/80 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-950/80">
@@ -164,6 +166,26 @@ export function ThreadSidebar({
           </ul>
         )}
       </div>
+
+      {/* Memory Panel — between thread list and footer */}
+      {memoryFacts.length > 0 && (
+        <div className="border-t border-gray-200/60 bg-gradient-to-b from-blue-50/80 to-purple-50/60 px-3 py-2.5 dark:border-gray-700 dark:from-blue-950/30 dark:to-purple-950/20">
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <span className="text-xs">🧠</span>
+            <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">用户记忆</span>
+          </div>
+          <div className="max-h-32 space-y-1 overflow-y-auto">
+            {memoryFacts.map((fact, i) => (
+              <div
+                key={i}
+                className="rounded bg-white/70 px-2 py-1 text-[11px] leading-relaxed text-gray-600 dark:bg-gray-800/50 dark:text-gray-300"
+              >
+                {fact}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="border-t border-gray-200/60 px-3 py-2.5 dark:border-gray-800/60">
