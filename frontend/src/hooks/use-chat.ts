@@ -51,6 +51,7 @@ export function useChat() {
   const [steps, setSteps] = useState<AgentStep[]>([]);
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [executionMode, setExecutionMode] = useState<ExecutionMode | null>(null);
+  const [memoryFacts, setMemoryFacts] = useState<string[]>([]);
   const activeThreadRef = useRef<string>("default");
 
   // Per-thread streams: each thread can run independently
@@ -182,11 +183,13 @@ export function useChat() {
             const strategy = (raw.strategy ?? "truncate") as string;
             const strategyLabel = strategy === "smart" ? "🧠 智能压缩" : "✂️ 截断压缩";
             const preview = (raw.summary_preview ?? "") as string;
-            let compactMsg = `${strategyLabel} · ${raw.original_messages} → ${raw.compacted_to} 条消息`;
-            if (preview) {
-              compactMsg += ` · 📝 ${preview.length > 100 ? preview.slice(0, 100) + "..." : preview}`;
-            }
+            const compactMsg = `${strategyLabel} · ${raw.original_messages} → ${raw.compacted_to} 条消息`;
             addStep({ id: nanoid(), type: "thinking", content: compactMsg, status: "completed", timestamp: Date.now() });
+            // Update memory sidebar with summary facts
+            if (preview) {
+              const facts = preview.split("\n").map(l => l.trim()).filter(Boolean);
+              setMemoryFacts(facts);
+            }
             break;
           }
           case "error": {
@@ -327,5 +330,5 @@ export function useChat() {
     setIsStreaming(false);
   }, []);
 
-  return { messages, isStreaming, steps, todos, executionMode, send, disconnect, clearMessages, switchToThread, setMessages };
+  return { messages, isStreaming, steps, todos, executionMode, memoryFacts, send, disconnect, clearMessages, switchToThread, setMessages };
 }

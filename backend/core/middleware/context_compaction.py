@@ -44,6 +44,11 @@ from core.middleware.base import Middleware
 
 logger = logging.getLogger(__name__)
 
+# Echo suppression: middleware writes summary here keyed by thread_id.
+# SSE handler reads it to suppress the model's echo of the summary.
+# Populated in before_node, consumed in chat.py streaming, cleaned up after.
+active_echo_filters: dict[str, str] = {}
+
 # Patterns treated as pure greetings; a HumanMessage that starts with one of
 # these AND is short is skipped when searching for the user's "first substantive
 # intent". Kept intentionally small and conservative.
@@ -282,6 +287,11 @@ class ContextCompactionMiddleware(Middleware):
 
         # Step 5 — roll summary forward in metadata
         metadata["context_summary"] = new_summary
+
+        # Register for echo suppression (SSE handler will filter matching tokens)
+        thread_id = (state.get("metadata") or {}).get("thread_id", "")
+        if thread_id:
+            active_echo_filters[thread_id] = new_summary
 
         # Step 6 — assemble final message list (silent compaction)
         # Summary lives ONLY in metadata. No synthetic messages injected.

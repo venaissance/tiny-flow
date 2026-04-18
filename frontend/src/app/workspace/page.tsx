@@ -97,7 +97,7 @@ const LAYOUT_WITH_ARTIFACT = { chat: 58, artifact: 42 };
 // ---------------------------------------------------------------------------
 
 export default function WorkspacePage() {
-  const { messages, isStreaming, steps, send, clearMessages, switchToThread, disconnect, todos, executionMode } =
+  const { messages, isStreaming, steps, send, clearMessages, switchToThread, disconnect, todos, executionMode, memoryFacts } =
     useChat();
   const {
     threads,
@@ -232,13 +232,36 @@ export default function WorkspacePage() {
       {/* ── Sidebar ── */}
       <div className={cn("flex-shrink-0 transition-all duration-200", sidebarOpen ? "w-64" : "w-0")}>
         {sidebarOpen && (
-          <ThreadSidebar
-            threads={threads}
-            activeThreadId={activeThreadId}
-            onSelect={handleSwitchThread}
-            onNew={handleNewThread}
-            onDelete={deleteThread}
-          />
+          <div className="flex h-full flex-col">
+            <div className="flex-1 overflow-hidden">
+              <ThreadSidebar
+                threads={threads}
+                activeThreadId={activeThreadId}
+                onSelect={handleSwitchThread}
+                onNew={handleNewThread}
+                onDelete={deleteThread}
+              />
+            </div>
+            {/* Memory Panel */}
+            {memoryFacts.length > 0 && (
+              <div className="border-t border-gray-200 bg-gradient-to-b from-blue-50/80 to-purple-50/60 p-3 dark:border-gray-700 dark:from-blue-950/30 dark:to-purple-950/20">
+                <div className="mb-2 flex items-center gap-1.5">
+                  <span className="text-sm">🧠</span>
+                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">用户记忆</span>
+                </div>
+                <div className="space-y-1">
+                  {memoryFacts.map((fact, i) => (
+                    <div
+                      key={i}
+                      className="rounded-md bg-white/70 px-2 py-1 text-xs text-gray-700 shadow-sm dark:bg-gray-800/50 dark:text-gray-300"
+                    >
+                      {fact}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from core.graph.builder import build_graph
+from core.middleware.context_compaction import active_echo_filters
 from langchain_core.messages import HumanMessage
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,12 @@ async def chat(request: ChatRequest):
             pending_node_output: dict | None = None
             # Track <think>...</think> blocks for filtering (MiniMax M2.7)
             in_think = False
+            # Echo suppression: Chinese LLMs echo context_summary from system prompt.
+            # Buffer initial tokens, suppress while they match the known summary.
+            _echo_ref = active_echo_filters.get(request.thread_id, "")
+            _echo_ref_norm = _echo_ref.replace("\n", "").replace(" ", "").replace(":", "").replace("：", "") if _echo_ref else ""
+            _echo_buf = ""
+            _echo_active = bool(_echo_ref_norm)
 
             async for event in graph.astream_events(
                 input_state, config=config, version="v2"
@@ -119,6 +126,18 @@ async def chat(request: ChatRequest):
                         tags = event.get("tags", [])
                         parent = event.get("metadata", {}).get("langgraph_node", "")
                         if parent in ("respond", "think_respond", "reflector", "execute", "merge"):
+                            # Echo suppression: skip tokens matching the summary
+                            if _echo_active:
+                                _echo_buf += content
+                                buf_norm = _echo_buf.replace("\n", "").replace(" ", "").replace(":", "").replace("：", "")
+                                if _echo_ref_norm.startswith(buf_norm):
+                                    continue  # still in echo zone, suppress
+                                if len(buf_norm) < len(_echo_ref_norm) * 0.8:
+                                    continue  # not enough data yet, keep buffering
+                                # Echo zone ended — start emitting from here
+                                _echo_active = False
+                                # Don't emit the buffered echo, just continue with new tokens
+                                continue
                             yield evt("content", {"content": content})
 
                 # --- Tool call events from within subagent ---
@@ -135,6 +154,7 @@ async def chat(request: ChatRequest):
                     yield evt("tool_result", {"name": tool_name, "preview": output_str})
 
             yield evt("done", {})
+            active_echo_filters.pop(request.thread_id, None)
         except Exception as e:
             logger.exception(f"Chat stream error: {e}")
             yield evt("error", {"error": str(e)})
