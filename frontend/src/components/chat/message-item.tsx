@@ -62,6 +62,24 @@ function ProcessingMessage({ message }: { message: Message }) {
   );
 }
 
+function DurationLabel({ firstTokenMs, durationMs }: { firstTokenMs?: number; durationMs?: number }) {
+  if (durationMs == null && firstTokenMs == null) return null;
+  const fmt = (ms: number) =>
+    ms >= 1000 ? `${(ms / 1000).toFixed(ms >= 10000 ? 0 : 1)}s` : `${Math.round(ms)}ms`;
+  const title =
+    firstTokenMs != null && durationMs != null
+      ? `首字 ${fmt(firstTokenMs)} · 总耗时 ${fmt(durationMs)}`
+      : undefined;
+  return (
+    <span
+      title={title}
+      className="rounded px-1.5 py-0.5 font-mono text-[11px] text-gray-400 dark:text-gray-500"
+    >
+      {durationMs != null ? fmt(durationMs) : firstTokenMs != null ? `${fmt(firstTokenMs)}…` : ""}
+    </span>
+  );
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -186,8 +204,12 @@ function AssistantMessage({
         </div>
         {/* Bottom action bar (Perplexity style) */}
         {!isStreaming && (
-          <div className="mt-2 flex items-center gap-0.5 border-t border-gray-100 pt-2 dark:border-gray-800">
+          <div className="mt-2 flex items-center gap-1.5 border-t border-gray-100 pt-2 dark:border-gray-800">
             <CopyButton text={message.content} />
+            <DurationLabel
+              firstTokenMs={message.firstTokenMs}
+              durationMs={message.durationMs}
+            />
           </div>
         )}
       </div>

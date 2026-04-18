@@ -97,8 +97,11 @@ const LAYOUT_WITH_ARTIFACT = { chat: 58, artifact: 42 };
 // ---------------------------------------------------------------------------
 
 export default function WorkspacePage() {
-  const { messages, isStreaming, steps, send, clearMessages, switchToThread, disconnect, todos, executionMode, memoryFacts } =
-    useChat();
+  const {
+    messages, isStreaming, steps, send, clearMessages, switchToThread, disconnect,
+    todos, executionMode, userMemory, threadSummary,
+    deleteMemoryFact, updateMemoryFact, clearMemory,
+  } = useChat();
   const {
     threads,
     activeThreadId,
@@ -238,7 +241,10 @@ export default function WorkspacePage() {
             onSelect={handleSwitchThread}
             onNew={handleNewThread}
             onDelete={deleteThread}
-            memoryFacts={memoryFacts}
+            userMemory={userMemory}
+            onMemoryDelete={deleteMemoryFact}
+            onMemoryUpdate={updateMemoryFact}
+            onMemoryClear={clearMemory}
           />
         )}
       </div>
@@ -365,6 +371,21 @@ export default function WorkspacePage() {
                   <ArrowDown className="h-3.5 w-3.5" />
                   新内容
                 </button>
+              )}
+
+              {/* Per-thread compaction summary — only shown while a thread has one */}
+              {threadSummary && (
+                <div className="pointer-events-auto absolute bottom-3 left-3 z-10 max-w-xs">
+                  <details className="group rounded-xl border border-amber-200/70 bg-amber-50/95 px-3 py-2 text-xs shadow-sm backdrop-blur-sm dark:border-amber-900/40 dark:bg-amber-950/50">
+                    <summary className="flex cursor-pointer select-none items-center gap-1.5 text-amber-700 dark:text-amber-300">
+                      <span>🧠</span>
+                      <span className="font-medium">本会话记忆</span>
+                    </summary>
+                    <p className="mt-2 whitespace-pre-wrap leading-relaxed text-amber-900/80 dark:text-amber-200/80">
+                      {threadSummary}
+                    </p>
+                  </details>
+                </div>
               )}
             </div>
 

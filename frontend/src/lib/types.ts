@@ -6,6 +6,7 @@ export type SSEEventType =
   | "subagent_status"
   | "subagent_result"
   | "memory_update"
+  | "user_memory"
   | "todo_update"
   | "mode_selected"
   | "loop_warning"
@@ -28,6 +29,10 @@ export interface Message {
   thinking?: string;
   toolCalls?: ToolCallInfo[];
   timestamp: number;
+  /** Elapsed ms between user send and first assistant token (assistant only). */
+  firstTokenMs?: number;
+  /** Elapsed ms between user send and stream done (assistant only). */
+  durationMs?: number;
 }
 
 export interface ToolCallInfo {

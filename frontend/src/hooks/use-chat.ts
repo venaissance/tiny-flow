@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { nanoid } from "nanoid";
 import type { Message, ToolCallInfo, AgentStep, TodoItem, ExecutionMode, SSEEventType } from "@/lib/types";
 
@@ -51,8 +51,63 @@ export function useChat() {
   const [steps, setSteps] = useState<AgentStep[]>([]);
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [executionMode, setExecutionMode] = useState<ExecutionMode | null>(null);
-  const [memoryFacts, setMemoryFacts] = useState<string[]>([]);
+  // Durable, cross-thread user memory facts (from MemoryEngine, persisted to disk).
+  const [userMemory, setUserMemory] = useState<Array<{
+    id: string;
+    content: string;
+    category: string;
+    confidence: number;
+    access_count?: number;
+    score_breakdown?: { explicitness?: number; repetition?: number; consistency?: number };
+    source_thread?: string;
+    created_at?: string;
+  }>>([]);
+  // Per-thread rolling conversation summary (from AsyncCompactor).
+  const [threadSummary, setThreadSummary] = useState<string>("");
   const activeThreadRef = useRef<string>("default");
+
+  // Fetch durable user memory on mount so the sidebar shows facts even
+  // before any stream fires an SSE event.
+  const refetchMemory = useCallback(async () => {
+    try {
+      const r = await fetch("/api/memory");
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data?.facts) setUserMemory(data.facts);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    refetchMemory().then(() => { if (cancelled) return; });
+    return () => { cancelled = true; };
+  }, [refetchMemory]);
+
+  const deleteMemoryFact = useCallback(async (id: string) => {
+    setUserMemory((prev) => prev.filter((f) => f.id !== id));
+    await fetch(`/api/memory/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await refetchMemory();
+  }, [refetchMemory]);
+
+  const updateMemoryFact = useCallback(async (
+    id: string,
+    patch: { content?: string; category?: string; confidence?: number },
+  ) => {
+    setUserMemory((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    );
+    await fetch(`/api/memory/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    await refetchMemory();
+  }, [refetchMemory]);
+
+  const clearMemory = useCallback(async () => {
+    setUserMemory([]);
+    await fetch("/api/memory", { method: "DELETE" });
+  }, []);
 
   // Per-thread streams: each thread can run independently
   const streamsRef = useRef<Map<string, ThreadStream>>(new Map());
@@ -84,6 +139,7 @@ export function useChat() {
       };
 
       const abortController = new AbortController();
+      const startedAt = Date.now();
       const stream: ThreadStream = {
         buffer: {
           messages: [...messages, userMsg],
@@ -148,7 +204,16 @@ export function useChat() {
             buf.messages = buf.messages.filter((m) => m.role !== "processing");
             if (!buf.assistantCreated) {
               buf.assistantCreated = true;
-              buf.messages = [...buf.messages, { id: nanoid(), role: "assistant", content: chunk, timestamp: Date.now() }];
+              buf.messages = [
+                ...buf.messages,
+                {
+                  id: nanoid(),
+                  role: "assistant",
+                  content: chunk,
+                  timestamp: Date.now(),
+                  firstTokenMs: Date.now() - startedAt,
+                },
+              ];
             } else {
               const msgs = [...buf.messages];
               for (let i = msgs.length - 1; i >= 0; i--) {
@@ -185,10 +250,34 @@ export function useChat() {
             const preview = (raw.summary_preview ?? "") as string;
             const compactMsg = `${strategyLabel} · ${raw.original_messages} → ${raw.compacted_to} 条消息`;
             addStep({ id: nanoid(), type: "thinking", content: compactMsg, status: "completed", timestamp: Date.now() });
-            // Update memory sidebar with summary facts
-            if (preview) {
-              const facts = preview.split("\n").map(l => l.trim()).filter(Boolean);
-              setMemoryFacts(facts);
+            if (preview) setThreadSummary(preview);
+            break;
+          }
+          case "user_memory": {
+            // Durable cross-thread user facts from MemoryEngine.
+            const facts = (raw.facts ?? []) as Array<{
+              id?: string;
+              content: string;
+              category?: string;
+              confidence?: number;
+              access_count?: number;
+              score_breakdown?: { explicitness?: number; repetition?: number; consistency?: number };
+              source_thread?: string;
+              created_at?: string;
+            }>;
+            if (Array.isArray(facts)) {
+              setUserMemory(
+                facts.map((f) => ({
+                  id: f.id ?? nanoid(),
+                  content: f.content,
+                  category: f.category ?? "context",
+                  confidence: f.confidence ?? 0.5,
+                  access_count: f.access_count,
+                  score_breakdown: f.score_breakdown,
+                  source_thread: f.source_thread,
+                  created_at: f.created_at,
+                })),
+              );
             }
             break;
           }
@@ -243,9 +332,21 @@ export function useChat() {
         stream.buffer.steps = stream.buffer.steps.map((s) =>
           s.status === "running" ? { ...s, status: "completed" as const } : s,
         );
+        // Stamp total duration on last assistant message
+        const totalMs = Date.now() - startedAt;
+        const lastAssistantIdx = [...stream.buffer.messages]
+          .map((m, i) => ({ m, i }))
+          .reverse()
+          .find(({ m }) => m.role === "assistant")?.i;
+        if (lastAssistantIdx !== undefined) {
+          const msgs = [...stream.buffer.messages];
+          msgs[lastAssistantIdx] = { ...msgs[lastAssistantIdx]!, durationMs: totalMs };
+          stream.buffer.messages = msgs;
+        }
         if (isCurrent(threadId)) {
           setIsStreaming(false);
           setSteps([...stream.buffer.steps]);
+          setMessages([...stream.buffer.messages]);
         }
         saveBufferToBackend(threadId, stream.buffer);
       }
@@ -330,5 +431,10 @@ export function useChat() {
     setIsStreaming(false);
   }, []);
 
-  return { messages, isStreaming, steps, todos, executionMode, memoryFacts, send, disconnect, clearMessages, switchToThread, setMessages };
+  return {
+    messages, isStreaming, steps, todos, executionMode,
+    userMemory, threadSummary,
+    send, disconnect, clearMessages, switchToThread, setMessages,
+    deleteMemoryFact, updateMemoryFact, clearMemory,
+  };
 }
