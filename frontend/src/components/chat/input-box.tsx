@@ -85,16 +85,25 @@ export const InputBox = forwardRef<InputBoxHandle, InputBoxProps>(
     const canSend = value.trim().length > 0 && !disabled;
 
     return (
-      <div className="px-4 pb-4 pt-2">
+      <div className="px-5 pb-5 pt-2">
+        <div className="mb-2 flex items-center justify-between px-1">
+          <span className="label-eyebrow text-[9px]">Inscribe</span>
+          <span className="font-mono text-[10px] tracking-wide text-[var(--color-ink-faint)]">
+            ⏎ 发送 · ⇧⏎ 换行
+          </span>
+        </div>
+
         <div
           className={cn(
-            "relative rounded-2xl border bg-white shadow-sm transition-all duration-200 dark:bg-gray-900",
+            "relative rounded-[6px] border bg-[var(--color-paper)]/95 backdrop-blur-sm transition-all duration-200",
             focused
-              ? "border-blue-300 shadow-[0_0_0_3px_rgba(59,130,246,0.08)] dark:border-blue-600/50 dark:shadow-[0_0_0_3px_rgba(59,130,246,0.12)]"
-              : "border-gray-200 dark:border-gray-700/60",
-            disabled && "opacity-60 cursor-not-allowed",
+              ? "border-[var(--color-vermilion)]/55 shadow-[0_0_0_3px_oklch(0.58_0.205_30/0.08),0_1px_0_0_oklch(0.92_0.015_78)_inset]"
+              : "border-[var(--color-rule)] shadow-[0_1px_0_0_oklch(0.92_0.015_78)_inset,0_1px_2px_-1px_rgba(60,40,20,0.06)]",
+            disabled && "cursor-not-allowed opacity-60",
           )}
         >
+          <div className="pointer-events-none absolute left-3.5 top-1/2 h-[55%] w-px -translate-y-1/2 bg-[var(--color-rule)]" />
+
           <textarea
             ref={textareaRef}
             value={value}
@@ -102,36 +111,37 @@ export const InputBox = forwardRef<InputBoxHandle, InputBoxProps>(
             onKeyDown={handleKeyDown}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
-            placeholder="输入消息..."
+            placeholder="提出一个问题…"
             disabled={disabled}
             rows={1}
-            className="block w-full resize-none bg-transparent px-4 py-3 pr-12 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed dark:text-gray-100 dark:placeholder:text-gray-500"
+            className="block w-full resize-none bg-transparent px-7 py-3.5 pr-14 text-[14px] leading-relaxed text-[var(--color-ink)] placeholder:italic placeholder:text-[var(--color-ink-faint)] focus:outline-none disabled:cursor-not-allowed"
+            style={{ fontFamily: "var(--font-sans)" }}
           />
           {isStreaming ? (
             <button
               onClick={onStop}
-              className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-xl bg-red-500 text-white shadow-sm transition-all duration-200 hover:bg-red-600 active:scale-95"
+              className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-[5px] bg-[var(--color-vermilion-deep)] text-[var(--color-paper)] shadow-[0_1px_2px_rgba(0,0,0,0.1)] transition-all duration-200 hover:bg-[var(--color-vermilion)] active:scale-95"
               title="停止生成"
             >
-              <Square className="h-3.5 w-3.5" fill="currentColor" />
+              <Square className="h-3 w-3" fill="currentColor" />
             </button>
           ) : (
             <button
               onClick={handleSend}
               disabled={!canSend}
               className={cn(
-                "absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200",
+                "absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-[5px] transition-all duration-200",
                 canSend
-                  ? "bg-blue-500 text-white shadow-sm hover:bg-blue-600 active:scale-95"
-                  : "bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-600",
+                  ? "bg-[var(--color-ink)] text-[var(--color-paper)] hover:bg-[var(--color-vermilion)] active:scale-95"
+                  : "bg-[var(--color-parchment)] text-[var(--color-ink-faint)]",
               )}
             >
-              <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+              <ArrowUp className="h-3.5 w-3.5" strokeWidth={2.2} />
             </button>
           )}
         </div>
         {value.length >= CHAR_COUNT_THRESHOLD && (
-          <div className="mt-1 text-right text-xs text-gray-400">
+          <div className="mt-1.5 pr-1 text-right font-mono text-[10px] tracking-wide text-[var(--color-ink-faint)]">
             {value.length} chars
           </div>
         )}

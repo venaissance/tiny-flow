@@ -106,16 +106,21 @@ export function ArtifactPanel({ content, onClose, className }: ArtifactPanelProp
   }, [html]);
 
   return (
-    <div className={cn("flex h-full flex-col bg-white dark:bg-gray-950", className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-4 py-2">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {isHtml ? "网页预览" : "研究报告"}
-        </span>
+    <div className={cn("relative flex h-full flex-col border-l border-[var(--color-rule)] bg-[var(--color-paper)]/90 backdrop-blur-sm", className)}>
+      {/* Header — masthead for the folio */}
+      <div className="relative flex items-center justify-between border-b border-[var(--color-rule)] px-5 py-2.5">
+        <div className="flex items-baseline gap-2.5">
+          <span className="label-eyebrow text-[9px]">
+            {isHtml ? "Folio · Artifact" : "Folio · Research"}
+          </span>
+          <span className="font-display text-[15px] italic leading-none text-[var(--color-ink)]">
+            {isHtml ? "网页预览" : "研究报告"}
+          </span>
+        </div>
 
-        <div className="flex items-center gap-1">
-          {/* View mode toggle */}
-          <div className="mr-2 flex rounded-md border text-xs dark:border-gray-700">
+        <div className="flex items-center gap-1.5">
+          {/* View mode toggle — book-tab style */}
+          <div className="mr-1 flex overflow-hidden rounded-[4px] border border-[var(--color-rule)] bg-[var(--color-parchment)]/40 text-[11px]">
             {(
               isHtml
                 ? [
@@ -133,12 +138,11 @@ export function ArtifactPanel({ content, onClose, className }: ArtifactPanelProp
                 key={tab.key}
                 onClick={() => setViewMode(tab.key)}
                 className={cn(
-                  "px-2.5 py-1 transition-colors",
-                  i === 0 && "rounded-l-md",
-                  i === arr.length - 1 && "rounded-r-md",
+                  "px-3 py-1 font-display italic transition-colors",
+                  i > 0 && "border-l border-[var(--color-rule)]",
                   viewMode === tab.key
-                    ? "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400",
+                    ? "bg-[var(--color-paper)] text-[var(--color-vermilion-deep)]"
+                    : "text-[var(--color-ink-mute)] hover:bg-[var(--color-paper)]/60 hover:text-[var(--color-ink)]",
                 )}
               >
                 {tab.label}
@@ -150,10 +154,10 @@ export function ArtifactPanel({ content, onClose, className }: ArtifactPanelProp
           {isHtml && (
             <button
               onClick={handleOpenInTab}
-              className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+              className="rounded-sm p-1.5 text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-parchment)] hover:text-[var(--color-vermilion)]"
               title="新窗口打开"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.4}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
               </svg>
             </button>
@@ -162,10 +166,10 @@ export function ArtifactPanel({ content, onClose, className }: ArtifactPanelProp
           {/* Copy */}
           <button
             onClick={handleCopy}
-            className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+            className="rounded-sm p-1.5 text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-parchment)] hover:text-[var(--color-ink)]"
             title="复制"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.4}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
             </svg>
           </button>
@@ -173,10 +177,10 @@ export function ArtifactPanel({ content, onClose, className }: ArtifactPanelProp
           {/* Close */}
           <button
             onClick={onClose}
-            className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+            className="rounded-sm p-1.5 text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-vermilion-soft)] hover:text-[var(--color-vermilion-deep)]"
             title="关闭"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -184,24 +188,57 @@ export function ArtifactPanel({ content, onClose, className }: ArtifactPanelProp
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="relative flex-1 overflow-hidden">
+        {/* Marginal decorative rule on the left edge */}
+        <div className="pointer-events-none absolute left-[28px] top-6 bottom-6 w-px bg-[var(--color-rule-soft)]" aria-hidden />
+
         {viewMode === "preview" ? (
           isHtml && html ? (
             <iframe
-              className="h-full w-full border-0"
+              className="h-full w-full border-0 bg-white"
               title="HTML preview"
               sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
               srcDoc={html}
             />
           ) : (
-            <div className="h-full overflow-y-auto p-6">
-              <Streamdown
-                className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-a:underline prose-a:underline-offset-2 prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:text-sm prose-code:dark:bg-gray-800 prose-pre:rounded-lg prose-pre:bg-gray-50 prose-pre:dark:bg-gray-900 prose-table:border-collapse prose-th:border prose-th:border-gray-200 prose-th:bg-gray-50 prose-th:px-3 prose-th:py-2 prose-th:dark:border-gray-700 prose-th:dark:bg-gray-800 prose-td:border prose-td:border-gray-200 prose-td:px-3 prose-td:py-2 prose-td:dark:border-gray-700"
-                remarkPlugins={streamdownPlugins.remarkPlugins}
-                rehypePlugins={streamdownPlugins.rehypePlugins}
-              >
-                {content}
-              </Streamdown>
+            <div className="relative h-full overflow-y-auto">
+              <article className="mx-auto max-w-2xl px-10 py-8">
+                <Streamdown
+                  className={cn(
+                    "prose prose-sm max-w-none",
+                    // base
+                    "prose-p:leading-[1.8] prose-p:text-[var(--color-ink)]",
+                    // headings
+                    "prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-[var(--color-ink)]",
+                    "prose-h1:text-[28px] prose-h1:leading-[1.15] prose-h1:mb-4 prose-h1:mt-0 prose-h1:border-b prose-h1:border-[var(--color-rule)] prose-h1:pb-3",
+                    "prose-h2:text-[22px] prose-h2:italic prose-h2:mt-10 prose-h2:mb-3 prose-h2:text-[var(--color-vermilion-deep)]",
+                    "prose-h3:text-[17px] prose-h3:italic prose-h3:mt-6 prose-h3:mb-2",
+                    // links
+                    "prose-a:text-[var(--color-vermilion-deep)] prose-a:decoration-[var(--color-vermilion)]/40 prose-a:underline-offset-[3px] hover:prose-a:text-[var(--color-vermilion)]",
+                    // inline code
+                    "prose-code:rounded-sm prose-code:border prose-code:border-[var(--color-rule-soft)] prose-code:bg-[var(--color-parchment)]/50 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[12.5px] prose-code:font-medium prose-code:text-[var(--color-vermilion-deep)] prose-code:before:content-none prose-code:after:content-none",
+                    // pre / code blocks
+                    "prose-pre:rounded-[5px] prose-pre:border prose-pre:border-[var(--color-rule)] prose-pre:bg-[var(--color-parchment)]/60 prose-pre:p-4 prose-pre:text-[12px] prose-pre:leading-relaxed prose-pre:shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]",
+                    // tables — hairline manuscript style
+                    "prose-table:my-6 prose-table:border-collapse prose-table:text-[13px]",
+                    "prose-th:border-b-2 prose-th:border-[var(--color-ink)] prose-th:bg-transparent prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:font-display prose-th:font-semibold prose-th:italic",
+                    "prose-td:border-b prose-td:border-[var(--color-rule-soft)] prose-td:px-3 prose-td:py-2.5 prose-td:align-top",
+                    // blockquote
+                    "prose-blockquote:border-l-2 prose-blockquote:border-[var(--color-vermilion)]/60 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-[var(--color-ink-soft)]",
+                    // ul / ol
+                    "prose-li:marker:text-[var(--color-vermilion)]/60 prose-li:my-0.5",
+                    // strong
+                    "prose-strong:font-semibold prose-strong:text-[var(--color-ink)]",
+                    // hr
+                    "prose-hr:border-[var(--color-rule)] prose-hr:my-8",
+                    "dark:prose-invert",
+                  )}
+                  remarkPlugins={streamdownPlugins.remarkPlugins}
+                  rehypePlugins={streamdownPlugins.rehypePlugins}
+                >
+                  {content}
+                </Streamdown>
+              </article>
             </div>
           )
         ) : viewMode === "html" ? (

@@ -25,7 +25,6 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  Sparkles,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -42,7 +41,7 @@ function StepTimeline({ steps }: { steps: AgentStep[] }) {
   if (steps.length === 0) return null;
 
   return (
-    <div className="mb-4 ml-10 space-y-0.5">
+    <div className="mb-4 ml-10 space-y-0 border-l border-dashed border-[var(--color-rule)] pl-4">
       {steps.map((step, i) => {
         const isLast = i === steps.length - 1;
         const isFailed = step.status === "failed";
@@ -53,28 +52,33 @@ function StepTimeline({ steps }: { steps: AgentStep[] }) {
           <div
             key={step.id}
             className={cn(
-              "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm animate-step-in",
-              isLast ? "opacity-100" : "opacity-50",
-              isRunning && "bg-blue-50/60 dark:bg-blue-950/20",
+              "group relative -ml-6 flex items-center gap-3 rounded-sm py-1 pl-6 text-sm animate-step-in",
+              isLast ? "opacity-100" : "opacity-55",
             )}
           >
-            <div className="flex-shrink-0">
+            <div className={cn(
+              "absolute left-[-7px] top-1/2 flex h-[13px] w-[13px] -translate-y-1/2 items-center justify-center rounded-full border bg-[var(--color-paper)] transition-colors",
+              isFailed ? "border-[var(--color-vermilion-deep)]"
+                : isRunning ? "border-[var(--color-vermilion)]"
+                : step.status === "completed" ? "border-[var(--color-verdigris)]"
+                : "border-[var(--color-ink-faint)]",
+            )}>
               {isFailed ? (
-                <XCircle className="h-3.5 w-3.5 text-red-400" />
+                <XCircle className="h-2.5 w-2.5 text-[var(--color-vermilion-deep)]" />
               ) : isRunning ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+                <Loader2 className="h-2.5 w-2.5 animate-spin text-[var(--color-vermilion)]" />
               ) : step.status === "completed" ? (
-                <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                <CheckCircle2 className="h-2.5 w-2.5 text-[var(--color-verdigris-deep)]" />
               ) : (
-                <Icon className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />
+                <Icon className="h-2.5 w-2.5 text-[var(--color-ink-mute)]" />
               )}
             </div>
             <span
               className={cn(
-                "text-xs",
-                isFailed
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-gray-500 dark:text-gray-400",
+                "font-display text-[12.5px] italic leading-tight",
+                isFailed ? "text-[var(--color-vermilion-deep)]"
+                  : isRunning ? "text-[var(--color-ink)]"
+                  : "text-[var(--color-ink-mute)]",
               )}
             >
               {step.content}
@@ -231,9 +235,9 @@ export default function WorkspacePage() {
   const artifactOpen = showArtifact && !!artifactContent;
 
   return (
-    <div className="flex h-screen">
+    <div className="relative z-10 flex h-screen">
       {/* ── Sidebar ── */}
-      <div className={cn("flex-shrink-0 transition-all duration-200", sidebarOpen ? "w-64" : "w-0")}>
+      <div className={cn("flex-shrink-0 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]", sidebarOpen ? "w-72" : "w-0")}>
         {sidebarOpen && (
           <ThreadSidebar
             threads={threads}
@@ -257,41 +261,59 @@ export default function WorkspacePage() {
       >
         <ResizablePanel id="chat" defaultSize={100} minSize={40}>
           <div className="flex h-full flex-col">
-            {/* Header */}
-            <header className="relative z-10 flex items-center justify-between bg-white/80 px-4 py-2.5 shadow-[0_1px_3px_0_rgb(0_0_0/0.06),0_1px_2px_-1px_rgb(0_0_0/0.04)] backdrop-blur-sm dark:bg-gray-950/80">
-              <div className="flex items-center gap-2.5">
+            {/* Header — the masthead */}
+            <header className="relative z-10 flex items-center justify-between border-b border-[var(--color-rule-soft)] bg-[var(--color-paper)]/70 px-6 py-3 backdrop-blur-[6px]">
+              <div className="flex items-center gap-3.5">
                 <button
                   onClick={() => setSidebarOpen((v) => !v)}
-                  className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                  className="rounded p-1 text-[var(--color-ink-mute)] transition-colors hover:bg-[var(--color-parchment)] hover:text-[var(--color-ink)]"
+                  aria-label="Toggle sidebar"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.4}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                   </svg>
                 </button>
-                <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none">
-                  <circle cx="6" cy="12" r="2.5" fill="currentColor" opacity="0.85" />
-                  <circle cx="18" cy="6" r="2.5" fill="currentColor" opacity="0.6" />
-                  <circle cx="18" cy="18" r="2.5" fill="currentColor" opacity="0.6" />
-                  <path d="M8.2 11.1L15.5 7.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5" />
-                  <path d="M8.2 12.9L15.5 16.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5" />
-                </svg>
-                <h1 className="text-sm font-semibold tracking-tight text-gray-800 dark:text-gray-200">
-                  TinyFlow
-                </h1>
+                <div className="h-4 w-px bg-[var(--color-rule)]" />
+                {/* Brand: ornament + display serif wordmark */}
+                <div className="flex items-baseline gap-2.5">
+                  <svg
+                    className="h-[18px] w-[18px] translate-y-[2px] text-[var(--color-vermilion)]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                  >
+                    <circle cx="12" cy="12" r="4" fill="currentColor" fillOpacity="0.18" />
+                    <circle cx="12" cy="12" r="4" />
+                    <circle cx="5" cy="6" r="1.4" fill="currentColor" />
+                    <circle cx="19" cy="6" r="1.4" fill="currentColor" opacity="0.55" />
+                    <circle cx="5" cy="18" r="1.4" fill="currentColor" opacity="0.55" />
+                    <circle cx="19" cy="18" r="1.4" fill="currentColor" opacity="0.8" />
+                    <path d="M6.2 6.8 L10 10.3 M17.8 6.8 L14 10.3 M6.2 17.2 L10 13.7 M17.8 17.2 L14 13.7" stroke="currentColor" strokeWidth="0.9" opacity="0.6" />
+                  </svg>
+                  <h1 className="font-display text-[19px] font-medium leading-none tracking-tight text-[var(--color-ink)]">
+                    Tiny<span className="italic text-[var(--color-vermilion)]">Flow</span>
+                  </h1>
+                  <span className="label-eyebrow hidden translate-y-[-1px] sm:inline">
+                    Venaissance Workbench
+                  </span>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 {artifactContent && !showArtifact && (
                   <button
                     onClick={() => setShowArtifact(true)}
-                    className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 shadow-sm transition-all hover:bg-blue-100 hover:shadow dark:bg-blue-950/60 dark:text-blue-400"
+                    className="group inline-flex items-center gap-2 rounded-full border border-[var(--color-vermilion)]/30 bg-[var(--color-vermilion-soft)] px-3.5 py-1 text-[11px] font-medium tracking-wide text-[var(--color-vermilion-deep)] transition-all hover:border-[var(--color-vermilion)]/60 hover:shadow-sm dark:border-[var(--color-vermilion)]/40 dark:bg-[var(--color-vermilion)]/10 dark:text-[var(--color-vermilion-soft)]"
                   >
-                    报告
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-vermilion)]" />
+                    <span className="small-caps text-[10px]">Folio</span>
+                    <span className="font-display italic">报告</span>
                   </button>
                 )}
               </div>
               {isStreaming && (
-                <div className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden">
-                  <div className="h-full w-full animate-[header-gradient_3s_ease_infinite] bg-gradient-to-r from-transparent via-blue-500 to-transparent bg-[length:200%_100%]" />
+                <div className="absolute inset-x-0 bottom-[-1px] h-[1.5px] overflow-hidden">
+                  <div className="h-full w-full animate-[header-gradient_3s_ease_infinite] bg-[length:200%_100%] bg-gradient-to-r from-transparent via-[var(--color-vermilion)] to-transparent" />
                 </div>
               )}
             </header>
@@ -305,29 +327,58 @@ export default function WorkspacePage() {
                   </div>
                 )}
                 {messages.length === 0 ? (
-                  <div className="flex h-full items-center justify-center">
-                    <div className="flex flex-col items-center gap-6 text-center">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/20">
-                        <Sparkles className="h-7 w-7 text-blue-500 dark:text-blue-400" />
+                  <div className="flex h-full items-center justify-center px-6">
+                    <div className="flex w-full max-w-2xl flex-col items-center gap-10 text-center">
+                      {/* Illuminated initial — a Renaissance drop-cap */}
+                      <div className="relative">
+                        <div className="flex h-24 w-24 items-center justify-center">
+                          <svg viewBox="0 0 96 96" className="absolute inset-0 h-full w-full text-[var(--color-vermilion)]/30">
+                            <circle cx="48" cy="48" r="46" fill="none" stroke="currentColor" strokeWidth="0.75" strokeDasharray="1 3" />
+                            <circle cx="48" cy="48" r="38" fill="none" stroke="currentColor" strokeWidth="0.5" />
+                          </svg>
+                          <span className="font-display text-[64px] font-light italic leading-none tracking-tight text-[var(--color-vermilion)]">T</span>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-base font-medium text-gray-700 dark:text-gray-200">有什么我可以帮你的?</p>
-                        <p className="mt-1 text-sm text-gray-400">输入问题开始研究，或试试下面的例子</p>
+
+                      <div className="space-y-3">
+                        <p className="label-eyebrow">Folio I · A New Inquiry</p>
+                        <h2 className="font-display text-4xl font-light leading-[1.1] tracking-tight text-[var(--color-ink)]">
+                          有什么值得<span className="italic text-[var(--color-vermilion)]">探究</span>的？
+                        </h2>
+                        <p className="mx-auto max-w-md font-serif text-[15px] italic leading-relaxed text-[var(--color-ink-mute)]" style={{ fontFamily: "var(--font-display)" }}>
+                          Propose a question, and the agents shall begin their dialogue.
+                        </p>
                       </div>
-                      <div className="flex flex-wrap justify-center gap-2">
+
+                      <div className="ornament-rule w-48" />
+
+                      <div className="grid w-full grid-cols-1 gap-px overflow-hidden rounded-[6px] border border-[var(--color-rule)] bg-[var(--color-rule)] sm:grid-cols-2">
                         {[
-                          { label: "⚡ 什么是 ReAct Agent？", prompt: "什么是 ReAct Agent？" },
-                          { label: "📋 搜索 Claude Code 更新", prompt: "帮我搜索一下 Claude Code 最新的更新内容" },
-                          { label: "🚀 并行调研三个话题", prompt: "分别调研以下三个话题：1. Claude 4.5 最新能力 2. Cursor 和 Claude Code 的对比 3. 2026年 AI Coding 工具市场格局" },
-                          { label: "📡 Pulse 科技日报", prompt: "帮我生成今日的 Pulse 科技日报" },
-                          { label: "🎯 调研+制作 PPT", prompt: "先调研 AI Agent 2026 年最新趋势，然后用这些调研结果制作一个演示文稿" },
-                        ].map(({ label, prompt }) => (
+                          { numeral: "I",   cap: "Definitions",     label: "什么是 ReAct Agent？", prompt: "什么是 ReAct Agent？" },
+                          { numeral: "II",  cap: "Dispatches",      label: "搜索 Claude Code 更新", prompt: "帮我搜索一下 Claude Code 最新的更新内容" },
+                          { numeral: "III", cap: "Parallel Studies", label: "并行调研三个话题", prompt: "分别调研以下三个话题：1. Claude 4.5 最新能力 2. Cursor 和 Claude Code 的对比 3. 2026年 AI Coding 工具市场格局" },
+                          { numeral: "IV",  cap: "Daily Folio",     label: "Pulse 科技日报", prompt: "帮我生成今日的 Pulse 科技日报" },
+                          { numeral: "V",   cap: "Codex Atelier",   label: "调研 + 制作 PPT", prompt: "先调研 AI Agent 2026 年最新趋势，然后用这些调研结果制作一个演示文稿" },
+                        ].map(({ numeral, cap, label, prompt }) => (
                           <button
                             key={label}
                             onClick={() => handleSend(prompt)}
-                            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 active:scale-95 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                            className="group relative flex items-start gap-3 bg-[var(--color-paper)] px-5 py-4 text-left transition-colors duration-200 hover:bg-[var(--color-parchment)] focus-visible:bg-[var(--color-parchment)]"
                           >
-                            {label}
+                            <span className="font-display mt-0.5 w-7 flex-shrink-0 text-right text-[13px] italic leading-none text-[var(--color-vermilion)]/70 group-hover:text-[var(--color-vermilion)]">
+                              {numeral}.
+                            </span>
+                            <span className="flex-1">
+                              <span className="label-eyebrow block text-[9px] text-[var(--color-ink-faint)] group-hover:text-[var(--color-ink-mute)]">
+                                {cap}
+                              </span>
+                              <span className="mt-1 block font-display text-[15px] font-normal leading-snug text-[var(--color-ink)] group-hover:text-[var(--color-ink)]">
+                                {label}
+                              </span>
+                            </span>
+                            <svg className="mt-1 h-3.5 w-3.5 flex-shrink-0 text-[var(--color-ink-faint)] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M5 12h14M13 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                           </button>
                         ))}
                       </div>
@@ -350,11 +401,15 @@ export default function WorkspacePage() {
                     {/* Step timeline: live during streaming, collapsible after */}
                     {isStreaming && steps.length > 0 && <StepTimeline steps={steps} />}
                     {!isStreaming && steps.length > 0 && (
-                      <details className="mb-4 ml-10 rounded-lg border border-gray-200/60 dark:border-gray-700/40">
-                        <summary className="cursor-pointer px-3 py-2 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-                          🔍 推理过程 ({steps.length} 步)
+                      <details className="mb-4 ml-10 rounded-[4px] border border-[var(--color-rule)]/70 bg-[var(--color-paper-deep)]/40">
+                        <summary className="flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-[var(--color-ink-mute)] transition-colors hover:text-[var(--color-ink)]">
+                          <span className="label-eyebrow text-[9px]">Apparatus</span>
+                          <span className="font-display text-[12px] italic">推理过程</span>
+                          <span className="font-mono text-[10px] tracking-wide text-[var(--color-ink-faint)]">
+                            · {steps.length} 步
+                          </span>
                         </summary>
-                        <div className="border-t border-gray-100 dark:border-gray-800">
+                        <div className="border-t border-[var(--color-rule-soft)] pt-2">
                           <StepTimeline steps={steps} />
                         </div>
                       </details>
@@ -366,22 +421,27 @@ export default function WorkspacePage() {
               {showScrollButton && messages.length > 0 && (
                 <button
                   onClick={scrollToBottom}
-                  className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border bg-white/90 px-3 py-1.5 text-xs text-gray-500 shadow-md backdrop-blur-sm hover:shadow-lg dark:border-gray-700 dark:bg-gray-800/90"
+                  className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-[var(--color-rule)] bg-[var(--color-paper)]/95 px-3.5 py-1 text-[11px] font-medium tracking-wide text-[var(--color-ink-soft)] shadow-[0_2px_10px_-2px_rgba(60,40,20,0.1)] backdrop-blur-sm transition-all hover:border-[var(--color-vermilion)]/40 hover:text-[var(--color-vermilion)]"
                 >
-                  <ArrowDown className="h-3.5 w-3.5" />
-                  新内容
+                  <ArrowDown className="h-3 w-3" />
+                  <span className="small-caps text-[9px]">Scroll</span>
+                  <span className="font-display italic">新内容</span>
                 </button>
               )}
 
-              {/* Per-thread compaction summary — only shown while a thread has one */}
+              {/* Per-thread compaction summary — a marginalia note */}
               {threadSummary && (
                 <div className="pointer-events-auto absolute bottom-3 left-3 z-10 max-w-xs">
-                  <details className="group rounded-xl border border-amber-200/70 bg-amber-50/95 px-3 py-2 text-xs shadow-sm backdrop-blur-sm dark:border-amber-900/40 dark:bg-amber-950/50">
-                    <summary className="flex cursor-pointer select-none items-center gap-1.5 text-amber-700 dark:text-amber-300">
-                      <span>🧠</span>
-                      <span className="font-medium">本会话记忆</span>
+                  <details className="group rounded-[4px] border border-[var(--color-gilt)]/35 bg-[var(--color-gilt-soft)]/90 px-3 py-2 text-xs shadow-[0_2px_12px_-3px_rgba(140,100,40,0.12)] backdrop-blur-sm dark:border-[var(--color-gilt)]/30 dark:bg-[var(--color-parchment)]/60">
+                    <summary className="flex cursor-pointer select-none items-center gap-2 text-[var(--color-gilt-deep)] dark:text-[var(--color-gilt)]">
+                      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M4 19h16M6 19V7l6-3 6 3v12" />
+                        <path d="M9 12h6" opacity="0.5" />
+                      </svg>
+                      <span className="small-caps text-[9px]">Marginalia</span>
+                      <span className="font-display italic">本会话记忆</span>
                     </summary>
-                    <p className="mt-2 whitespace-pre-wrap leading-relaxed text-amber-900/80 dark:text-amber-200/80">
+                    <p className="mt-2 whitespace-pre-wrap font-display text-[12px] italic leading-relaxed text-[var(--color-ink-soft)] dark:text-[var(--color-ink-soft)]">
                       {threadSummary}
                     </p>
                   </details>

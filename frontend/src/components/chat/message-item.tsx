@@ -34,11 +34,12 @@ function containsHtmlDocument(content: string): boolean {
 
 function UserMessage({ message }: { message: Message }) {
   return (
-    <div className="group flex items-center justify-end gap-1.5 mb-4">
-      <div className="opacity-0 transition-opacity group-hover:opacity-100">
+    <div className="group mb-5 flex items-start justify-end gap-2">
+      <div className="mt-2 opacity-0 transition-opacity group-hover:opacity-100">
         <CopyButton text={message.content} />
       </div>
-      <div className="max-w-[70%] rounded-2xl rounded-br-md bg-blue-500/90 px-4 py-2.5 text-white text-sm shadow-sm shadow-blue-500/20 backdrop-blur-sm">
+      <div className="relative max-w-[72%] rounded-[6px] bg-[var(--color-ink)] px-4 py-2.5 text-[13.5px] leading-relaxed text-[var(--color-paper)] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
+        <span className="pointer-events-none absolute -bottom-1 right-1 h-1.5 w-1.5 rounded-[1px] bg-[var(--color-vermilion)]" />
         {message.content}
       </div>
     </div>
@@ -51,11 +52,11 @@ function ProcessingMessage({ message }: { message: Message }) {
       {message.toolCalls?.map((tc, i) => (
         <div
           key={i}
-          className="inline-flex items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50/80 px-4 py-2 text-xs text-gray-600 shadow-sm backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800/50 dark:text-gray-300"
+          className="inline-flex items-center gap-2.5 rounded-[5px] border border-[var(--color-rule)] bg-[var(--color-parchment)]/60 px-3.5 py-1.5 text-xs text-[var(--color-ink-soft)] shadow-[0_1px_2px_-1px_rgba(60,40,20,0.05)]"
         >
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
-          <span className="text-gray-400 dark:text-gray-500">搜索</span>
-          <span className="font-medium text-gray-700 dark:text-gray-200">{tc.query}</span>
+          <Loader2 className="h-3 w-3 animate-spin text-[var(--color-vermilion)]" />
+          <span className="label-eyebrow text-[9px]">Query</span>
+          <span className="font-display italic">{tc.query}</span>
         </div>
       ))}
     </div>
@@ -73,7 +74,7 @@ function DurationLabel({ firstTokenMs, durationMs }: { firstTokenMs?: number; du
   return (
     <span
       title={title}
-      className="rounded px-1.5 py-0.5 font-mono text-[11px] text-gray-400 dark:text-gray-500"
+      className="font-mono text-[10px] tracking-wide text-[var(--color-ink-faint)]"
     >
       {durationMs != null ? fmt(durationMs) : firstTokenMs != null ? `${fmt(firstTokenMs)}…` : ""}
     </span>
@@ -96,14 +97,14 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+      className="rounded-sm p-1 text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-parchment)] hover:text-[var(--color-ink)]"
       title="复制内容"
       aria-label="Copy message content"
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-green-500" />
+        <Check className="h-3 w-3 text-[var(--color-verdigris-deep)]" />
       ) : (
-        <Copy className="h-3.5 w-3.5" />
+        <Copy className="h-3 w-3" />
       )}
     </button>
   );
@@ -122,30 +123,30 @@ function HtmlArtifactCard({ content, isStreaming }: { content: string; isStreami
 
   return (
     <div className="group mb-6 flex gap-3">
-      <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+      <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[4px] border border-[var(--color-vermilion)]/30 bg-[var(--color-vermilion-soft)]/60">
         {isStreaming ? (
-          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--color-vermilion)]" />
         ) : (
-          <FileCode2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <FileCode2 className="h-3.5 w-3.5 text-[var(--color-vermilion-deep)]" />
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="rounded-xl border border-blue-200/60 bg-gradient-to-r from-blue-50/80 to-indigo-50/50 shadow-sm dark:border-blue-800/40 dark:from-blue-950/30 dark:to-indigo-950/20">
+        <div className="rounded-[5px] border border-[var(--color-rule)] bg-[var(--color-paper)]/80 shadow-[0_1px_2px_-1px_rgba(60,40,20,0.05)]">
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{title}</p>
-              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              <span className="label-eyebrow block text-[9px]">Folio · Artifact</span>
+              <p className="mt-0.5 truncate font-display text-[15px] font-medium text-[var(--color-ink)]">{title}</p>
+              <p className="mt-0.5 font-mono text-[10px] text-[var(--color-ink-faint)]">
                 {isStreaming
                   ? `已生成 ${content.length} 字符...`
                   : "HTML 页面已生成，请在右侧面板预览"}
               </p>
             </div>
-            {!isStreaming && <ExternalLink className="h-4 w-4 flex-shrink-0 text-gray-400" />}
+            {!isStreaming && <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-[var(--color-ink-mute)]" />}
           </div>
-          {/* Streaming preview: show real-time content excerpt */}
           {isStreaming && preview && (
-            <div className="border-t border-blue-100/60 px-4 py-2 dark:border-blue-800/30">
-              <p className="line-clamp-3 font-mono text-[11px] leading-relaxed text-gray-400 dark:text-gray-500">
+            <div className="border-t border-[var(--color-rule-soft)] px-4 py-2">
+              <p className="line-clamp-3 font-mono text-[10.5px] leading-relaxed text-[var(--color-ink-faint)]">
                 {preview}
               </p>
             </div>
@@ -187,12 +188,16 @@ function AssistantMessage({
 
   return (
     <div className="group mb-6 flex gap-3">
-      <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-        <Bot className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+      <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[4px] border border-[var(--color-rule)] bg-[var(--color-parchment)]/60">
+        <Bot className="h-3.5 w-3.5 text-[var(--color-ink-soft)]" strokeWidth={1.5} />
       </div>
-      <div className="relative min-w-0 flex-1 border-l-2 border-gray-200/60 pl-4 dark:border-gray-700/40">
+      <div className="relative min-w-0 flex-1 border-l border-[var(--color-rule-soft)] pl-4">
+        <div className="mb-1.5 flex items-center gap-2">
+          <span className="label-eyebrow text-[9px]">Scholar</span>
+          <div className="h-px flex-1 bg-[var(--color-rule-soft)]" />
+        </div>
         {thinking && !isStreaming && <ThinkingBlock content={thinking} />}
-        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-headings:font-semibold">
+        <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-p:text-[var(--color-ink)] prose-headings:font-display prose-headings:font-medium prose-headings:text-[var(--color-ink)] prose-strong:text-[var(--color-ink)] prose-code:text-[var(--color-vermilion-deep)] prose-a:text-[var(--color-vermilion-deep)] prose-a:decoration-[var(--color-vermilion)]/40 hover:prose-a:text-[var(--color-vermilion)] dark:prose-invert dark:prose-p:text-[var(--color-ink)] dark:prose-headings:text-[var(--color-ink)] dark:prose-code:text-[var(--color-vermilion-soft)] dark:prose-a:text-[var(--color-vermilion-soft)]">
           <Streamdown
             remarkPlugins={streamdownPlugins.remarkPlugins}
             rehypePlugins={streamdownPlugins.rehypePlugins}
@@ -202,9 +207,8 @@ function AssistantMessage({
             {safeContent}
           </Streamdown>
         </div>
-        {/* Bottom action bar (Perplexity style) */}
         {!isStreaming && (
-          <div className="mt-2 flex items-center gap-1.5 border-t border-gray-100 pt-2 dark:border-gray-800">
+          <div className="mt-2 flex items-center gap-2 border-t border-[var(--color-rule-soft)] pt-2">
             <CopyButton text={message.content} />
             <DurationLabel
               firstTokenMs={message.firstTokenMs}

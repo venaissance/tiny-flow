@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   PlusIcon,
   Trash2Icon,
-  MessageSquareIcon,
   ZapIcon,
   PencilIcon,
   CheckIcon,
@@ -81,17 +80,17 @@ const COMPONENT_LABELS: Record<string, { label: string; hint: string; color: str
   explicitness: {
     label: "具体度",
     hint: "事实越具体/越长 → 越可信（>20字=0.9，否则=0.5）",
-    color: "bg-sky-500",
+    color: "bg-[var(--color-lapis)]",
   },
   repetition: {
     label: "重复度",
     hint: "多次提到相似信息 → 越可信（每次相似度>0.5 +0.3，上限1.0）",
-    color: "bg-emerald-500",
+    color: "bg-[var(--color-verdigris)]",
   },
   consistency: {
     label: "一致性",
     hint: "与已有同类记忆不冲突 → 越可信（无冲突=1.0，疑似冲突=0.5）",
-    color: "bg-violet-500",
+    color: "bg-[var(--color-gilt)]",
   },
 };
 
@@ -122,30 +121,32 @@ function ThreadItem({
         onClick={onSelect}
         onKeyDown={(e) => e.key === "Enter" && onSelect()}
         className={[
-          "group relative flex w-full cursor-pointer items-start gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm",
-          "transition-all duration-150 ease-in-out",
+          "group relative flex w-full cursor-pointer items-start gap-2.5 rounded-[4px] px-2.5 py-2 text-left transition-all duration-150 ease-in-out",
           isActive
-            ? "border-l-2 border-l-blue-500 bg-blue-50/80 text-blue-700 dark:border-l-blue-400 dark:bg-blue-950/60 dark:text-blue-200"
-            : "border-l-2 border-l-transparent text-gray-700 hover:bg-gray-100/80 dark:text-gray-300 dark:hover:bg-gray-800/60",
+            ? "bg-[var(--color-parchment)] text-[var(--color-ink)]"
+            : "text-[var(--color-ink-soft)] hover:bg-[var(--color-parchment)]/60 hover:text-[var(--color-ink)]",
         ].join(" ")}
       >
-        {/* Icon */}
-        <MessageSquareIcon
+        {/* Left accent rule — vermilion when active */}
+        <div
           className={[
-            "mt-0.5 h-4 w-4 flex-shrink-0 transition-colors duration-150",
+            "absolute inset-y-1.5 left-0 w-[2px] rounded-full transition-all",
             isActive
-              ? "text-blue-500 dark:text-blue-400"
-              : "text-gray-400 dark:text-gray-500",
+              ? "bg-[var(--color-vermilion)]"
+              : "bg-transparent group-hover:bg-[var(--color-ink)]/20",
           ].join(" ")}
         />
 
         {/* Content */}
-        <div className="min-w-0 flex-1">
-          <span className="block truncate font-medium leading-snug">
+        <div className="ml-1 min-w-0 flex-1">
+          <span className={[
+            "block truncate text-[13px] leading-snug",
+            isActive ? "font-display font-medium" : "font-display italic",
+          ].join(" ")}>
             {thread.title || "新对话"}
           </span>
           {relativeTime && (
-            <span className="mt-0.5 block text-[11px] leading-none text-gray-400 dark:text-gray-500">
+            <span className="mt-0.5 block font-mono text-[10px] leading-none tracking-wide text-[var(--color-ink-faint)]">
               {relativeTime}
             </span>
           )}
@@ -157,10 +158,10 @@ function ThreadItem({
             e.stopPropagation();
             onDelete();
           }}
-          className="mt-0.5 flex-shrink-0 rounded p-1 text-gray-300 opacity-0 transition-all duration-150 hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:text-gray-600 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+          className="mt-0.5 flex-shrink-0 rounded-sm p-1 text-[var(--color-ink-faint)] opacity-0 transition-all duration-150 hover:bg-[var(--color-vermilion-soft)] hover:text-[var(--color-vermilion-deep)] group-hover:opacity-100"
           title="删除"
         >
-          <Trash2Icon className="h-3.5 w-3.5" />
+          <Trash2Icon className="h-3 w-3" strokeWidth={1.6} />
         </button>
       </div>
     </li>
@@ -190,25 +191,50 @@ export function ThreadSidebar({
   onMemoryClear,
 }: ThreadSidebarProps) {
   return (
-    <aside className="flex h-full w-full flex-col border-r border-gray-200/80 bg-gray-50/70 dark:border-gray-800 dark:bg-gray-950/80">
-      {/* Header + New thread button */}
-      <div className="p-3 pb-2">
+    <aside className="relative flex h-full w-full flex-col border-r border-[var(--color-rule)] bg-[var(--color-sidebar)]/85 backdrop-blur-[2px]">
+      {/* Marginal rule — like a manuscript vertical guide */}
+      <div className="pointer-events-none absolute right-[10px] top-10 bottom-10 w-px bg-gradient-to-b from-transparent via-[var(--color-rule)] to-transparent" />
+
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-baseline gap-2">
+          <span className="label-eyebrow text-[9px]">Codex</span>
+          <div className="h-px flex-1 bg-[var(--color-rule)]" />
+          <span className="font-mono text-[10px] tracking-wide text-[var(--color-ink-faint)]">
+            v0.1
+          </span>
+        </div>
+      </div>
+
+      {/* New thread button — ink on paper */}
+      <div className="px-4 pb-3">
         <button
           onClick={onNew}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-md active:scale-[0.98] dark:bg-blue-600 dark:hover:bg-blue-500"
+          className="group relative flex w-full items-center justify-between gap-2 rounded-[5px] border border-[var(--color-ink)]/85 bg-[var(--color-ink)] px-3.5 py-2 text-[var(--color-paper)] transition-all duration-200 hover:border-[var(--color-vermilion)] hover:bg-[var(--color-vermilion)] active:scale-[0.99]"
         >
-          <PlusIcon className="h-4 w-4" />
-          新对话
+          <span className="flex items-center gap-2.5">
+            <PlusIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+            <span className="font-display text-[14px] italic leading-none">新的探究</span>
+          </span>
+          <span className="font-mono text-[10px] tracking-[0.15em] text-[var(--color-paper)]/60 group-hover:text-[var(--color-paper)]/80">
+            N
+          </span>
         </button>
       </div>
 
       {/* Thread list */}
-      <div className="flex-1 overflow-y-auto px-2 py-1">
+      <div className="flex-1 overflow-y-auto px-3 pb-2">
+        <div className="mb-2 px-2 pt-1">
+          <span className="label-eyebrow text-[9px]">Folios · 对话</span>
+        </div>
         {threads.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-3 py-8 text-center">
-            <MessageSquareIcon className="mb-2 h-8 w-8 text-gray-300 dark:text-gray-600" />
-            <p className="text-xs text-gray-400 dark:text-gray-500">暂无对话</p>
-            <p className="mt-1 text-[11px] text-gray-300 dark:text-gray-600">
+          <div className="flex flex-col items-center justify-center px-3 py-10 text-center">
+            <svg viewBox="0 0 48 48" className="mb-3 h-10 w-10 text-[var(--color-ink-faint)]" fill="none" stroke="currentColor" strokeWidth="1">
+              <rect x="8" y="6" width="32" height="36" rx="2" />
+              <path d="M14 14h20M14 20h20M14 26h14" opacity="0.5" />
+            </svg>
+            <p className="font-display text-[13px] italic text-[var(--color-ink-mute)]">一纸尚白</p>
+            <p className="mt-1 text-[10px] tracking-wide text-[var(--color-ink-faint)]">
               点击上方按钮开始
             </p>
           </div>
@@ -227,17 +253,19 @@ export function ThreadSidebar({
         )}
       </div>
 
-      {/* Durable user memory — persists across threads and restarts. */}
+      {/* Memory panel */}
       {userMemory.length > 0 && (
-        <div className="border-t border-gray-200/60 bg-gradient-to-b from-blue-50/80 to-purple-50/60 px-3 py-2.5 dark:border-gray-700 dark:from-blue-950/30 dark:to-purple-950/20">
-          <div className="mb-1.5 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs">🧠</span>
-              <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300">
+        <div className="relative border-t border-[var(--color-rule)] bg-[var(--color-parchment)]/55 px-3 pt-3 pb-2.5 dark:bg-[var(--color-paper-deep)]/50">
+          <div className="absolute -top-[9px] left-4 bg-[var(--color-sidebar)] px-1.5">
+            <span className="label-eyebrow text-[9px] text-[var(--color-ink-mute)]">Memoria</span>
+          </div>
+          <div className="mb-2 flex items-center justify-between px-1">
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-[13px] italic text-[var(--color-ink)]">
                 用户记忆
               </span>
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                {userMemory.length} 条
+              <span className="font-mono text-[10px] tracking-wide text-[var(--color-ink-faint)]">
+                · {userMemory.length} 条
               </span>
             </div>
             {onMemoryClear && (
@@ -248,14 +276,14 @@ export function ThreadSidebar({
                     onMemoryClear();
                   }
                 }}
-                className="rounded px-1.5 py-0.5 text-[10px] text-gray-400 transition hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                className="rounded-sm px-1.5 py-0.5 text-[10px] tracking-wide text-[var(--color-ink-faint)] transition hover:bg-[var(--color-vermilion-soft)] hover:text-[var(--color-vermilion-deep)]"
                 title="清空全部记忆"
               >
                 清空
               </button>
             )}
           </div>
-          <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
+          <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
             {userMemory.map((fact) => (
               <MemoryFactCard
                 key={fact.id}
@@ -268,15 +296,17 @@ export function ThreadSidebar({
         </div>
       )}
 
-      {/* Footer */}
-      <div className="border-t border-gray-200/60 px-3 py-2.5 dark:border-gray-800/60">
-        <div className="flex items-center gap-1.5">
-          <ZapIcon className="h-3 w-3 text-blue-400 dark:text-blue-500" />
-          <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
-            TinyFlow
-          </span>
-          <span className="text-[10px] text-gray-300 dark:text-gray-600">
-            v0.1.0
+      {/* Colophon */}
+      <div className="border-t border-[var(--color-rule)] px-4 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ZapIcon className="h-2.5 w-2.5 text-[var(--color-vermilion)]" strokeWidth={2} />
+            <span className="font-display text-[11px] italic leading-none text-[var(--color-ink-mute)]">
+              TinyFlow
+            </span>
+          </div>
+          <span className="font-mono text-[9px] tracking-[0.2em] text-[var(--color-ink-faint)]">
+            MMXXVI
           </span>
         </div>
       </div>
@@ -317,15 +347,15 @@ function MemoryFactCard({
   };
   const conf = fact.confidence;
   const confColor =
-    conf >= 0.7 ? "text-emerald-600 dark:text-emerald-400" :
-    conf >= 0.5 ? "text-sky-600 dark:text-sky-400" :
-    conf >= 0.3 ? "text-amber-600 dark:text-amber-400" :
-                  "text-gray-400 dark:text-gray-500";
+    conf >= 0.7 ? "text-[var(--color-verdigris-deep)] dark:text-[var(--color-verdigris)]" :
+    conf >= 0.5 ? "text-[var(--color-lapis)] dark:text-[var(--color-lapis-soft)]" :
+    conf >= 0.3 ? "text-[var(--color-gilt-deep)] dark:text-[var(--color-gilt)]" :
+                  "text-[var(--color-ink-faint)]";
   const confBar =
-    conf >= 0.7 ? "bg-emerald-500" :
-    conf >= 0.5 ? "bg-sky-500" :
-    conf >= 0.3 ? "bg-amber-500" :
-                  "bg-gray-400";
+    conf >= 0.7 ? "bg-[var(--color-verdigris)]" :
+    conf >= 0.5 ? "bg-[var(--color-lapis)]" :
+    conf >= 0.3 ? "bg-[var(--color-gilt)]" :
+                  "bg-[var(--color-ink-faint)]";
 
   const handleSaveEdit = () => {
     if (!onUpdate) return;
@@ -346,12 +376,12 @@ function MemoryFactCard({
 
   if (editing) {
     return (
-      <div className="rounded-md border border-blue-300 bg-white p-2 shadow-sm dark:border-blue-700 dark:bg-gray-800">
+      <div className="rounded-[4px] border border-[var(--color-vermilion)]/50 bg-[var(--color-paper)] p-2 shadow-[0_2px_6px_-2px_rgba(140,70,40,0.12)]">
         <div className="flex items-start gap-1.5">
           <select
             value={draftCat}
             onChange={(e) => setDraftCat(e.target.value)}
-            className="flex-shrink-0 rounded border border-gray-200 bg-white px-1 py-0.5 text-[10px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+            className="flex-shrink-0 rounded-sm border border-[var(--color-rule)] bg-[var(--color-paper)] px-1 py-0.5 text-[10px] text-[var(--color-ink-soft)] focus:border-[var(--color-vermilion)]/40 focus:outline-none"
           >
             {(["preference", "context", "behavior", "knowledge"] as const).map((c) => {
               const m = CATEGORY_META[c] ?? DEFAULT_META;
@@ -366,7 +396,7 @@ function MemoryFactCard({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={2}
-            className="flex-1 resize-none rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] leading-relaxed text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+            className="flex-1 resize-none rounded-sm border border-[var(--color-rule)] bg-[var(--color-paper)] px-1.5 py-0.5 text-[11px] leading-relaxed text-[var(--color-ink)] focus:border-[var(--color-vermilion)]/40 focus:outline-none"
             autoFocus
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -383,7 +413,7 @@ function MemoryFactCard({
           <button
             type="button"
             onClick={handleCancelEdit}
-            className="rounded px-1.5 py-0.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="rounded-sm px-1.5 py-0.5 text-[var(--color-ink-mute)] hover:bg-[var(--color-parchment)]"
             title="取消 (Esc)"
           >
             <XIcon className="h-3 w-3" />
@@ -391,7 +421,7 @@ function MemoryFactCard({
           <button
             type="button"
             onClick={handleSaveEdit}
-            className="rounded bg-blue-500 px-1.5 py-0.5 text-white hover:bg-blue-600"
+            className="rounded-sm bg-[var(--color-ink)] px-1.5 py-0.5 text-[var(--color-paper)] hover:bg-[var(--color-vermilion)]"
             title="保存 (⌘/Ctrl+Enter)"
           >
             <CheckIcon className="h-3 w-3" />
@@ -402,15 +432,15 @@ function MemoryFactCard({
   }
 
   return (
-    <div className="group rounded-md bg-white/80 shadow-sm dark:bg-gray-800/60">
+    <div className="group rounded-[4px] border border-[var(--color-rule-soft)] bg-[var(--color-paper)]/80 transition-colors hover:border-[var(--color-rule)] dark:bg-[var(--color-card)]/50">
       <div className="flex items-start">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex flex-1 items-start gap-1.5 px-2 py-1.5 text-left text-[11px] leading-relaxed text-gray-700 hover:bg-white dark:text-gray-200 dark:hover:bg-gray-800"
+          className="flex flex-1 items-start gap-2 px-2 py-1.5 text-left text-[11.5px] leading-relaxed text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
         >
-          <span className="mt-[1px] flex-shrink-0">{meta.emoji}</span>
-          <span className="flex-1 break-words">{fact.content}</span>
+          <span className="mt-[1px] flex-shrink-0 opacity-75">{meta.emoji}</span>
+          <span className="flex-1 break-words font-display">{fact.content}</span>
           <span
             className={`flex-shrink-0 font-mono text-[10px] tabular-nums ${confColor}`}
             title="综合置信度"
@@ -424,7 +454,7 @@ function MemoryFactCard({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setEditing(true); }}
-                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-blue-500 dark:hover:bg-gray-700"
+                className="rounded-sm p-1 text-[var(--color-ink-faint)] hover:bg-[var(--color-parchment)] hover:text-[var(--color-ink)]"
                 title="编辑"
               >
                 <PencilIcon className="h-3 w-3" />
@@ -437,7 +467,7 @@ function MemoryFactCard({
                   e.stopPropagation();
                   if (confirm("删除这条记忆？")) onDelete(fact.id);
                 }}
-                className="rounded p-1 text-gray-400 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/30"
+                className="rounded-sm p-1 text-[var(--color-ink-faint)] hover:bg-[var(--color-vermilion-soft)] hover:text-[var(--color-vermilion-deep)]"
                 title="删除"
               >
                 <Trash2Icon className="h-3 w-3" />
@@ -448,14 +478,14 @@ function MemoryFactCard({
       </div>
 
       {open && (
-        <div className="space-y-2 border-t border-gray-200/60 bg-gray-50/60 px-2.5 py-2 dark:border-gray-700 dark:bg-gray-900/40">
+        <div className="space-y-2 border-t border-[var(--color-rule-soft)] bg-[var(--color-parchment)]/40 px-2.5 py-2 dark:bg-[var(--color-paper-deep)]/40">
           {/* Overall confidence bar */}
           <div>
-            <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-gray-500 dark:text-gray-400">
-              <span>综合置信度</span>
+            <div className="mb-1 flex items-center justify-between text-[10px] text-[var(--color-ink-mute)]">
+              <span className="label-eyebrow text-[9px]">综合置信度</span>
               <span className={`font-mono tabular-nums ${confColor}`}>{conf.toFixed(3)}</span>
             </div>
-            <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+            <div className="relative h-1 w-full overflow-hidden rounded-full bg-[var(--color-rule-soft)]">
               <div
                 className={`absolute inset-y-0 left-0 ${confBar}`}
                 style={{ width: `${Math.max(Math.min(conf * 100, 100), 2)}%` }}
@@ -464,29 +494,29 @@ function MemoryFactCard({
           </div>
 
           {(E === 0 && R === 0 && C === 0) && (
-            <div className="rounded bg-amber-50/70 px-2 py-1.5 text-[10px] leading-snug text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+            <div className="rounded-sm border border-[var(--color-gilt)]/30 bg-[var(--color-gilt-soft)]/60 px-2 py-1.5 text-[10px] italic leading-snug text-[var(--color-gilt-deep)] dark:bg-[var(--color-parchment)]/40">
               这条记忆是早期版本创建的，没有保留 breakdown。新提取的记忆会完整展示打分过程。
             </div>
           )}
 
-          {/* Formula — only meaningful when breakdown was recorded */}
+          {/* Formula */}
           {(E !== 0 || R !== 0 || C !== 0) && (
-          <div className="rounded bg-white/70 px-2 py-1.5 font-mono text-[10px] leading-snug text-gray-600 dark:bg-gray-800/70 dark:text-gray-300">
-            <div className="mb-0.5 text-gray-400 dark:text-gray-500">confidence =</div>
+          <div className="rounded-sm border border-[var(--color-rule-soft)] bg-[var(--color-paper)]/80 px-2 py-1.5 font-mono text-[10px] leading-snug text-[var(--color-ink-soft)]">
+            <div className="mb-0.5 text-[var(--color-ink-faint)]">confidence =</div>
             <div>
-              <span className="text-sky-600 dark:text-sky-400">0.3</span>
-              <span className="text-gray-400"> · </span>
-              <span className="text-sky-700 dark:text-sky-300">{E.toFixed(2)}</span>
-              <span className="text-gray-400"> + </span>
-              <span className="text-emerald-600 dark:text-emerald-400">0.4</span>
-              <span className="text-gray-400"> · </span>
-              <span className="text-emerald-700 dark:text-emerald-300">{R.toFixed(2)}</span>
-              <span className="text-gray-400"> + </span>
-              <span className="text-violet-600 dark:text-violet-400">0.3</span>
-              <span className="text-gray-400"> · </span>
-              <span className="text-violet-700 dark:text-violet-300">{C.toFixed(2)}</span>
+              <span className="text-[var(--color-lapis)]">0.3</span>
+              <span className="text-[var(--color-ink-faint)]"> · </span>
+              <span className="text-[var(--color-lapis)]">{E.toFixed(2)}</span>
+              <span className="text-[var(--color-ink-faint)]"> + </span>
+              <span className="text-[var(--color-verdigris-deep)]">0.4</span>
+              <span className="text-[var(--color-ink-faint)]"> · </span>
+              <span className="text-[var(--color-verdigris-deep)]">{R.toFixed(2)}</span>
+              <span className="text-[var(--color-ink-faint)]"> + </span>
+              <span className="text-[var(--color-gilt-deep)]">0.3</span>
+              <span className="text-[var(--color-ink-faint)]"> · </span>
+              <span className="text-[var(--color-gilt-deep)]">{C.toFixed(2)}</span>
             </div>
-            <div className="mt-0.5 text-gray-500 dark:text-gray-400">
+            <div className="mt-0.5 text-[var(--color-ink-mute)]">
               = {contrib.explicitness.toFixed(2)} + {contrib.repetition.toFixed(2)} + {contrib.consistency.toFixed(2)}
               {" "}= <span className={`font-bold ${confColor}`}>{conf.toFixed(3)}</span>
             </div>
@@ -502,23 +532,23 @@ function MemoryFactCard({
               return (
                 <div key={key}>
                   <div className="mb-0.5 flex items-center justify-between text-[10px]">
-                    <span className="font-medium text-gray-600 dark:text-gray-300">
-                      {cfg.label}
-                      <span className="ml-1 text-gray-400">
-                        · 权重 {SCORE_WEIGHTS[key]}
+                    <span className="text-[var(--color-ink-soft)]">
+                      <span className="font-display italic">{cfg.label}</span>
+                      <span className="ml-1 font-mono text-[9px] text-[var(--color-ink-faint)]">
+                        · w {SCORE_WEIGHTS[key]}
                       </span>
                     </span>
-                    <span className="font-mono tabular-nums text-gray-500 dark:text-gray-400">
+                    <span className="font-mono tabular-nums text-[var(--color-ink-mute)]">
                       {val.toFixed(2)}
                     </span>
                   </div>
-                  <div className="h-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                  <div className="h-[3px] overflow-hidden rounded-full bg-[var(--color-rule-soft)]">
                     <div
                       className={`h-full ${cfg.color}`}
                       style={{ width: `${Math.min(val * 100, 100)}%` }}
                     />
                   </div>
-                  <div className="mt-0.5 text-[10px] leading-tight text-gray-500 dark:text-gray-400">
+                  <div className="mt-0.5 text-[10px] italic leading-tight text-[var(--color-ink-faint)]">
                     {cfg.hint}
                   </div>
                 </div>
@@ -529,7 +559,7 @@ function MemoryFactCard({
 
           {/* Metadata */}
           {(fact.access_count !== undefined || fact.source_thread || fact.created_at) && (
-            <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-1 text-[10px] text-gray-400 dark:text-gray-500">
+            <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 border-t border-[var(--color-rule-soft)] pt-1.5 font-mono text-[10px] text-[var(--color-ink-faint)]">
               {fact.access_count !== undefined && (
                 <span title="此记忆被注入 prompt 的次数">↻ {fact.access_count} 次引用</span>
               )}
