@@ -113,6 +113,12 @@ async def delete_thread(thread_id: str):
     _save_threads(threads)
     msg_file = _DATA_DIR / f"messages_{thread_id}.json"
     msg_file.unlink(missing_ok=True)
+    # Drop the persisted compaction summary for this thread.
+    try:
+        from core.compaction import get_async_compactor
+        get_async_compactor().forget_thread(thread_id)
+    except Exception:  # noqa: BLE001
+        pass
     return {"status": "deleted"}
 
 
@@ -144,9 +150,17 @@ def _auto_title(message: str) -> str:
 
 # --- Memory endpoints ---
 
+class MemoryFactUpdate(BaseModel):
+    content: str | None = None
+    category: str | None = None
+    confidence: float | None = None
+
+
 @router.get("/memory")
 async def get_memory():
-    engine = MemoryEngine()
+    from core.memory.engine import get_memory_engine
+    from core.memory.scorer import WEIGHTS
+    engine = get_memory_engine()
     facts = engine.get_facts()
     return {
         "facts": [
@@ -154,9 +168,61 @@ async def get_memory():
                 "id": f.id,
                 "content": f.content,
                 "category": f.category,
-                "confidence": f.confidence,
+                "confidence": round(f.confidence, 3),
+                "source_thread": f.source_thread,
+                "created_at": f.created_at,
+                "last_verified": f.last_verified,
+                "access_count": f.access_count,
+                "score_breakdown": f.score_breakdown or {},
             }
             for f in facts
         ],
         "stats": {"total": len(facts)},
+        "scoring": {
+            "weights": WEIGHTS,
+            "formula": "confidence = 0.3·explicitness + 0.4·repetition + 0.3·consistency",
+            "components": {
+                "explicitness": "事实越具体/越长 → 越可信（>20字=0.9, 否则=0.5）",
+                "repetition": "多次提到相似信息 → 越可信（每次相似度>0.5 +0.3，上限1.0）",
+                "consistency": "与已有同类记忆不冲突 → 越可信（无冲突=1.0, 疑似冲突=0.5）",
+            },
+        },
     }
+
+
+@router.delete("/memory/{fact_id}")
+async def delete_memory_fact(fact_id: str):
+    from core.memory.engine import get_memory_engine
+    engine = get_memory_engine()
+    removed = engine.storage.delete_fact(fact_id)
+    return {"removed": removed, "fact_id": fact_id}
+
+
+@router.patch("/memory/{fact_id}")
+async def update_memory_fact(fact_id: str, payload: MemoryFactUpdate):
+    from core.memory.engine import get_memory_engine
+    engine = get_memory_engine()
+    fields = {k: v for k, v in payload.dict().items() if v is not None}
+    if not fields:
+        return {"updated": False, "reason": "no fields provided"}
+    updated = engine.storage.update_fact(fact_id, **fields)
+    if updated is None:
+        return {"updated": False, "reason": "not found"}
+    return {
+        "updated": True,
+        "fact": {
+            "id": updated.id,
+            "content": updated.content,
+            "category": updated.category,
+            "confidence": round(updated.confidence, 3),
+            "score_breakdown": updated.score_breakdown or {},
+        },
+    }
+
+
+@router.delete("/memory")
+async def clear_memory():
+    from core.memory.engine import get_memory_engine
+    engine = get_memory_engine()
+    engine.storage.clear_all()
+    return {"cleared": True}

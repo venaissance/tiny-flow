@@ -8,7 +8,7 @@ from typing import Any
 from langgraph.graph import END, StateGraph
 
 from core.graph.state import GraphState
-from core.memory.engine import MemoryEngine
+from core.memory.engine import MemoryEngine, get_memory_engine
 from core.middleware.base import MiddlewareChain
 from core.middleware.todo import TodoMiddleware
 from core.middleware.loop_detection import LoopDetectionMiddleware
@@ -35,10 +35,18 @@ def _get_shared_checkpointer():
 
 
 def _build_compaction_middleware() -> ContextCompactionMiddleware:
-    """Build ContextCompactionMiddleware from config.yaml compaction section."""
+    """Build sync compaction middleware as a SAFETY NET only.
+
+    The primary compaction path is now async (`core.compaction.async_runner`)
+    which runs after each turn in the background. This middleware triggers
+    only at `safety_max_messages` (far higher than the async trigger) in
+    case the background task lags or fails — preventing state bloat.
+    """
     config = _load_config()
     cfg = config.get("compaction", {})
     strategy = cfg.get("strategy", "truncate")
+    # Use safety threshold, falling back to legacy max_messages * 4 or 40.
+    safety = cfg.get("safety_max_messages", max(cfg.get("max_messages", 10) * 4, 40))
 
     if strategy == "smart":
         summarizer = create_llm_summarizer(
@@ -46,15 +54,13 @@ def _build_compaction_middleware() -> ContextCompactionMiddleware:
             max_chars=cfg.get("summary_max_chars", 800),
         )
         return ContextCompactionMiddleware(
-            max_messages=cfg.get("max_messages", 30),
+            max_messages=safety,
             strategy="smart",
             retention_window=cfg.get("retention_window", 10),
             summarizer=summarizer,
         )
 
-    return ContextCompactionMiddleware(
-        max_messages=cfg.get("max_messages", 30),
-    )
+    return ContextCompactionMiddleware(max_messages=safety)
 
 
 def _build_middleware_stacks() -> dict[str, list]:
@@ -87,18 +93,26 @@ def build_graph(
     memory_engine: MemoryEngine | None = None,
 ) -> Any:
     """Build and compile the agent graph with 4-way routing."""
-    model = create_chat_model(name=model_name)
     config = _load_config()
+    roles = (config.get("model") or {}).get("roles") or {}
+
+    # Per-role model: explicit override > caller > config default.
+    # Cached per-name so we instantiate each distinct model only once.
+    _model_cache: dict[str, Any] = {}
+
+    def _model_for(role: str) -> Any:
+        name = model_name or roles.get(role)
+        key = name or "__default__"
+        if key not in _model_cache:
+            _model_cache[key] = create_chat_model(name=name)
+        return _model_cache[key]
+
     max_iterations = config.get("graph", {}).get("max_iterations", 3)
 
     if memory_engine is None:
-        mem_cfg = config.get("memory", {})
-        memory_engine = MemoryEngine(
-            token_budget=mem_cfg.get("token_budget", 500),
-            min_confidence=mem_cfg.get("min_confidence", 0.7),
-            decay_days=mem_cfg.get("decay_days", 30),
-            decay_factor=mem_cfg.get("decay_factor", 0.8),
-        )
+        # Shared singleton — persists to data/memory.json and is global across
+        # threads so a fact extracted in one thread informs every other.
+        memory_engine = get_memory_engine()
 
     # Import all nodes
     from core.graph.nodes.router import router_node
@@ -114,37 +128,47 @@ def build_graph(
     # ── Node wrappers (bind model + middleware) ──
 
     def _router(state: GraphState) -> dict:
-        state_with_mem = {**state, "memory_context": memory_engine.inject()}
-        return router_node(state_with_mem, model)
+        mem = memory_engine.inject()
+        state_with_mem = {**state, "memory_context": mem}
+        output = router_node(state_with_mem, _model_for("router"))
+        # Propagate memory_context into the checkpointed state so downstream
+        # nodes (respond/think_respond) can read it; the router scope's
+        # state_with_mem is a local copy, not a persisted update.
+        return {**output, "memory_context": mem}
 
     def _respond(state: GraphState) -> dict:
         chain = _get_middleware_chain(state)
-        return chain.run_node("respond", state, lambda s: respond_node(s, model))
+        m = _model_for("respond")
+        return chain.run_node("respond", state, lambda s: respond_node(s, m))
 
     def _think_respond(state: GraphState) -> dict:
         chain = _get_middleware_chain(state)
-        return chain.run_node("think_respond", state, lambda s: think_respond_node(s, model))
+        m = _model_for("think_respond")
+        return chain.run_node("think_respond", state, lambda s: think_respond_node(s, m))
 
     def _plan(state: GraphState) -> dict:
         chain = _get_middleware_chain(state)
-        return chain.run_node("plan", state, lambda s: plan_node(s, model))
+        m = _model_for("plan")
+        return chain.run_node("plan", state, lambda s: plan_node(s, m))
 
     def _dispatch(state: GraphState) -> dict:
         return dispatch_node(state)
 
     def _skill(state: GraphState) -> dict:
-        return skill_node(state, model)
+        return skill_node(state, _model_for("skill_node"))
 
     def _execute(state: GraphState) -> dict:
         chain = _get_middleware_chain(state)
-        return chain.run_node("execute", state, lambda s: execute_node(s, model))
+        m = _model_for("execute")
+        return chain.run_node("execute", state, lambda s: execute_node(s, m))
 
     def _reflector(state: GraphState) -> dict:
         chain = _get_middleware_chain(state)
-        return chain.run_node("reflector", state, lambda s: reflector_node(s, model, max_iterations))
+        m = _model_for("reflector")
+        return chain.run_node("reflector", state, lambda s: reflector_node(s, m, max_iterations))
 
     def _merge(state: GraphState) -> dict:
-        return merge_node(state, model)
+        return merge_node(state, _model_for("merge"))
 
     # ── Build graph ──
 

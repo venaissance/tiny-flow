@@ -15,6 +15,12 @@ logger = logging.getLogger(__name__)
 
 _CONFIG_PATH = Path(__file__).parent.parent.parent / "config.yaml"
 
+# Process-wide client cache. Keyed by (provider, model_name, thinking_enabled,
+# reasoning_effort). Reusing instances keeps the underlying httpx connection
+# pool warm — first request's ~10s TLS handshake only happens once per process,
+# not per request.
+_MODEL_CACHE: dict[tuple, BaseChatModel] = {}
+
 
 @lru_cache(maxsize=1)
 def _load_config() -> dict:
@@ -49,6 +55,14 @@ def create_chat_model(
     """
     model_name = name or get_default_model()
     provider = detect_provider(model_name)
+    kwargs.pop("streaming", None)  # factory always enforces streaming=True
+
+    # Only cache the common path (no extra kwargs). Callers that pass custom
+    # kwargs get a fresh instance so caching doesn't silently share mutable
+    # runtime configs.
+    cache_key = (provider, model_name, thinking_enabled, reasoning_effort) if not kwargs else None
+    if cache_key is not None and cache_key in _MODEL_CACHE:
+        return _MODEL_CACHE[cache_key]
 
     if provider == "claude":
         from langchain_anthropic import ChatAnthropic
@@ -59,13 +73,13 @@ def create_chat_model(
                 "type": "enabled",
                 "budget_tokens": 8000,
             }
-        return ChatAnthropic(model=model_name, streaming=True, **model_kwargs, **kwargs)
+        instance = ChatAnthropic(model=model_name, streaming=True, **model_kwargs, **kwargs)
     elif provider == "glm":
         import os
         from langchain_openai import ChatOpenAI
 
         base_url = "https://open.bigmodel.cn/api/paas/v4"
-        return ChatOpenAI(
+        instance = ChatOpenAI(
             model=model_name,
             streaming=True,
             base_url=base_url,
@@ -76,7 +90,7 @@ def create_chat_model(
         import os
         from langchain_openai import ChatOpenAI
 
-        return ChatOpenAI(
+        instance = ChatOpenAI(
             model=model_name,
             streaming=True,
             base_url="https://api.minimaxi.com/v1",
@@ -86,4 +100,8 @@ def create_chat_model(
     else:
         from langchain_openai import ChatOpenAI
 
-        return ChatOpenAI(model=model_name, streaming=True, **kwargs)
+        instance = ChatOpenAI(model=model_name, streaming=True, **kwargs)
+
+    if cache_key is not None:
+        _MODEL_CACHE[cache_key] = instance
+    return instance

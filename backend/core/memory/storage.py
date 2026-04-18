@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from threading import Lock
+from typing import Optional
 
 
 @dataclass
@@ -21,6 +22,11 @@ class Fact:
     last_verified: str = field(default_factory=lambda: datetime.now().isoformat())
     access_count: int = 0
     replaced_by: str | None = None
+    # Score breakdown: how the confidence was computed. Keys:
+    #   explicitness, repetition, consistency — each 0..1
+    # The final confidence = 0.3 * explicitness + 0.4 * repetition + 0.3 * consistency.
+    # Populated by scorer.score_fact at extraction/merge time.
+    score_breakdown: dict = field(default_factory=dict)
 
 
 class MemoryStorage:
@@ -66,6 +72,40 @@ class MemoryStorage:
             data = self._read()
             data["facts"] = [asdict(f) for f in facts]
             self._write(data)
+
+    def delete_fact(self, fact_id: str) -> bool:
+        """Remove a fact by id. Returns True if one was removed."""
+        with self._lock:
+            data = self._read()
+            before = len(data.get("facts", []))
+            data["facts"] = [f for f in data.get("facts", []) if f.get("id") != fact_id]
+            removed = before - len(data["facts"])
+            if removed:
+                self._write(data)
+            return bool(removed)
+
+    def update_fact(self, fact_id: str, **fields) -> Optional[Fact]:
+        """Patch named fields on a fact. Returns the updated Fact, or None
+        if the id didn't match anything."""
+        with self._lock:
+            data = self._read()
+            updated: Optional[Fact] = None
+            for f in data.get("facts", []):
+                if f.get("id") != fact_id:
+                    continue
+                for k, v in fields.items():
+                    if k in f:
+                        f[k] = v
+                f["last_verified"] = datetime.now().isoformat()
+                updated = Fact(**f)
+                break
+            if updated is not None:
+                self._write(data)
+            return updated
+
+    def clear_all(self):
+        with self._lock:
+            self._write({"version": "1.0", "facts": []})
 
     def apply_decay(self, decay_days: int = 30, decay_factor: float = 0.8):
         with self._lock:

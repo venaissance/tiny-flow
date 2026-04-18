@@ -6,6 +6,7 @@ from typing import Any
 
 from langchain_core.messages import SystemMessage
 
+from core.graph.nodes.respond import _build_system_prompt
 from core.graph.state import GraphState
 
 THINK_SYSTEM_PROMPT = (
@@ -22,18 +23,26 @@ THINK_SYSTEM_PROMPT = (
 
 
 def think_respond_node(state: GraphState, model: Any) -> dict:
-    """Response with visible reasoning chain."""
-    messages = list(state["messages"])
+    """Response with visible reasoning chain.
+
+    Thinking mode uses a stronger model (GLM-5.1) that can follow the
+    anti-echo instruction while still benefiting from the compaction
+    summary. We also pull the summary from AsyncCompactor (async path)
+    before falling back to state metadata (sync safety-net path).
+    """
+    from core.compaction import get_async_compactor
+
+    thread_id = (state.get("metadata") or {}).get("thread_id", "")
+    all_msgs = list(state["messages"])
+    effective = get_async_compactor().effective_messages(thread_id, all_msgs)
+
     memory = state.get("memory_context", "")
-    summary = (state.get("metadata") or {}).get("context_summary", "")
+    summary = get_async_compactor().get_summary(thread_id) or (
+        (state.get("metadata") or {}).get("context_summary", "")
+    )
 
-    system_parts = [THINK_SYSTEM_PROMPT]
-    if memory:
-        system_parts.append(f"已知用户信息:\n{memory}")
-    if summary:
-        system_parts.append(f"对话历史摘要:\n{summary}")
-
-    messages = [SystemMessage(content="\n\n".join(system_parts))] + messages
+    system_prompt = _build_system_prompt(THINK_SYSTEM_PROMPT, memory, summary)
+    messages = [SystemMessage(content=system_prompt)] + effective
 
     response = model.invoke(messages)
     return {"messages": [response]}

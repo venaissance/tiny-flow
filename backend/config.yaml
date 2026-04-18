@@ -1,5 +1,16 @@
 model:
   default: "GLM-5.1"
+  # Per-role model override. Nodes not listed fall back to `default`.
+  # Fast/cheap for routing + flash; strong for reasoning & research.
+  roles:
+    router: "glm-4-flash"        # tool-call router, speed > quality
+    respond: "glm-4.5-air"       # flash mode: needs to follow anti-echo rules; glm-4-flash is too weak
+    think_respond: "GLM-5.1"     # thinking mode needs reasoning
+    plan: "GLM-5.1"              # pro mode planner
+    execute: "GLM-5.1"
+    reflector: "GLM-5.1"
+    merge: "glm-4.5-air"
+    skill_node: "glm-4.5-air"
   providers:
     - name: openai
       api_key_env: OPENAI_API_KEY
@@ -19,8 +30,13 @@ memory:
   token_budget: 500
   decay_days: 30
   decay_factor: 0.8
-  min_confidence: 0.7
+  # Scorer gives first-mention facts 0.3-0.57 confidence (depends on length +
+  # whether another same-category fact exists). 0.3 lets every extracted fact
+  # through to injection; repetition across turns still boosts rank inside the
+  # token budget but doesn't gatekeep.
+  min_confidence: 0.3
   max_facts: 50
+  extraction_model: "glm-4-flash"
 
 skills:
   dirs:
@@ -28,11 +44,15 @@ skills:
   hot_reload: true
 
 compaction:
-  strategy: "smart"              # "truncate" (original) or "smart" (Deep Agent SDK)
-  max_messages: 20               # ~10 rounds before first trigger
-  retention_window: 10           # keep last 10 messages verbatim
-  summary_model: "glm-4-flash"   # cheap + fast model for summarization
-  summary_max_chars: 800         # rolling summary length cap
+  # Async: primary path, runs after each turn in background. Main agent never waits.
+  # Sync middleware: safety net only — kicks in if async never catches up. Use a
+  # much higher threshold so it effectively never triggers in normal operation.
+  strategy: "smart"
+  max_messages: 6                # async trigger threshold (via core.compaction.async_runner)
+  retention_window: 4            # kept verbatim after compaction
+  safety_max_messages: 40        # sync fallback trigger (if async somehow lags)
+  summary_model: "glm-4-flash"   # fast (~1-2s); since prompt no longer leaks an example, hallucination is fine
+  summary_max_chars: 800
 
 graph:
   max_iterations: 3

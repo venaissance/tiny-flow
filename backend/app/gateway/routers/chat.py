@@ -11,8 +11,9 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from core.compaction import ensure_message_ids, get_async_compactor
 from core.graph.builder import build_graph
-from core.middleware.context_compaction import active_echo_filters
+from core.memory.engine import get_memory_engine
 from langchain_core.messages import HumanMessage
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ async def chat(request: ChatRequest):
             return {"id": str(counter), "event": event_type, "data": json.dumps(data, ensure_ascii=False)}
 
         input_state = {
-            "messages": [HumanMessage(content=request.message)],
+            "messages": ensure_message_ids([HumanMessage(content=request.message)]),
             "route": None,
             "pending_tasks": [],
             "completed_tasks": [],
@@ -65,7 +66,49 @@ async def chat(request: ChatRequest):
         }
         config = {"configurable": {"thread_id": request.thread_id}, "recursion_limit": 50}
 
+        def _current_summary_event() -> dict | None:
+            """Build a context_compacted event from the async compactor's
+            latest record, or None if there isn't one yet."""
+            rec = get_async_compactor().get(request.thread_id)
+            if not rec or not rec.summary:
+                return None
+            retention = get_async_compactor().retention_window
+            return evt("context_compacted", {
+                "original_messages": rec.summarized_up_to + retention,
+                "compacted_to": retention,
+                "strategy": "smart",
+                "summary_preview": rec.summary[:200],
+                "_summary_gen_at": rec.generated_at,
+            })
+
         try:
+            # Surface durable cross-thread user memory at stream start.
+            try:
+                _facts = get_memory_engine().get_facts()
+                if _facts:
+                    yield evt("user_memory", {
+                        "facts": [
+                            {
+                                "id": f.id,
+                                "content": f.content,
+                                "category": f.category,
+                                "confidence": round(f.confidence, 3),
+                                "access_count": f.access_count,
+                                "score_breakdown": f.score_breakdown or {},
+                            }
+                            for f in _facts
+                        ],
+                    })
+            except Exception:  # noqa: BLE001
+                pass
+
+            # Surface any prior per-thread summary as well.
+            _last_seen = None
+            initial_evt = _current_summary_event()
+            if initial_evt is not None:
+                _last_seen = initial_evt["data"]
+                yield initial_evt
+
             # Track which nodes we've seen to send progress events once
             seen_nodes: set[str] = set()
             # Track which node is currently producing LLM tokens
@@ -74,12 +117,6 @@ async def chat(request: ChatRequest):
             pending_node_output: dict | None = None
             # Track <think>...</think> blocks for filtering (MiniMax M2.7)
             in_think = False
-            # Echo suppression: Chinese LLMs echo context_summary from system prompt.
-            # Buffer initial tokens, suppress while they match the known summary.
-            _echo_ref = active_echo_filters.get(request.thread_id, "")
-            _echo_ref_norm = _echo_ref.replace("\n", "").replace(" ", "").replace(":", "").replace("：", "") if _echo_ref else ""
-            _echo_buf = ""
-            _echo_active = bool(_echo_ref_norm)
 
             async for event in graph.astream_events(
                 input_state, config=config, version="v2"
@@ -123,21 +160,14 @@ async def chat(request: ChatRequest):
                         if not content:
                             continue
                         # Only stream content from respond/reflector nodes (final output)
-                        tags = event.get("tags", [])
+                        tags = event.get("tags", []) or []
                         parent = event.get("metadata", {}).get("langgraph_node", "")
+                        # Skip compaction summarizer tokens — they run inside
+                        # respond's before_node and would otherwise leak the
+                        # "米泽 is…" summary into the reply stream.
+                        if "compaction_summarizer" in tags:
+                            continue
                         if parent in ("respond", "think_respond", "reflector", "execute", "merge"):
-                            # Echo suppression: skip tokens matching the summary
-                            if _echo_active:
-                                _echo_buf += content
-                                buf_norm = _echo_buf.replace("\n", "").replace(" ", "").replace(":", "").replace("：", "")
-                                if _echo_ref_norm.startswith(buf_norm):
-                                    continue  # still in echo zone, suppress
-                                if len(buf_norm) < len(_echo_ref_norm) * 0.8:
-                                    continue  # not enough data yet, keep buffering
-                                # Echo zone ended — start emitting from here
-                                _echo_active = False
-                                # Don't emit the buffered echo, just continue with new tokens
-                                continue
                             yield evt("content", {"content": content})
 
                 # --- Tool call events from within subagent ---
@@ -153,11 +183,29 @@ async def chat(request: ChatRequest):
                     output_str = str(output)[:200] if output else ""
                     yield evt("tool_result", {"name": tool_name, "preview": output_str})
 
+            # Before closing, check if an async compaction finished DURING
+            # this stream — if so, surface the fresh summary now instead of
+            # making the user wait for the next turn.
+            late_evt = _current_summary_event()
+            if late_evt is not None and late_evt["data"] != _last_seen:
+                yield late_evt
+
             yield evt("done", {})
-            active_echo_filters.pop(request.thread_id, None)
         except Exception as e:
             logger.exception(f"Chat stream error: {e}")
             yield evt("error", {"error": str(e)})
+        finally:
+            # Fire-and-forget: both run off the hot path so user never waits.
+            #   1. Rolling per-thread summary (AsyncCompactor)
+            #   2. Durable cross-thread user facts (MemoryEngine)
+            try:
+                get_async_compactor().schedule(request.thread_id, graph, config)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("AsyncCompactor schedule failed: %s", e)
+            try:
+                get_memory_engine().schedule_extraction(request.thread_id, graph, config)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("MemoryEngine schedule failed: %s", e)
 
     return EventSourceResponse(event_stream())
 

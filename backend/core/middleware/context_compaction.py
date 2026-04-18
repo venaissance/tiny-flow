@@ -44,9 +44,9 @@ from core.middleware.base import Middleware
 
 logger = logging.getLogger(__name__)
 
-# Echo suppression: middleware writes summary here keyed by thread_id.
-# SSE handler reads it to suppress the model's echo of the summary.
-# Populated in before_node, consumed in chat.py streaming, cleaned up after.
+# Echo is now prevented via prompt engineering (see nodes/respond.py _ANTI_ECHO),
+# not via token-level buffering. This dict is kept as a no-op for backwards
+# compatibility with any external caller that still imports it.
 active_echo_filters: dict[str, str] = {}
 
 # Patterns treated as pure greetings; a HumanMessage that starts with one of
@@ -60,15 +60,14 @@ _GREETING_MAX_LEN = 12  # a "你好，帮我..." at 20+ chars is NOT a pure gree
 
 SummarizerFn = Callable[[str, list[BaseMessage]], str]
 
-_SUMMARY_PROMPT_TEMPLATE = """你是对话摘要助手。将历史摘要和新对话合并为一段简洁的自然语言总结。
+_SUMMARY_PROMPT_TEMPLATE = """你是对话摘要助手。将【历史摘要】和【新对话】合并为一段简洁的自然语言总结。
 
-要求：
-1. 用通顺的中文写 1-3 句话，不要用列表或 key:value 格式
-2. 保留关键信息：人名、项目名、技术细节、重要数字、用户的爱好和偏好
-3. 去掉寒暄和客套
-4. 控制在 {max_chars} 字以内
-
-示例：用户米泽是前端工程师，喜欢小动物，有个女儿叫熊熊。他正在开发ProjectPhoenix项目，使用React+TypeScript前端和FastAPI+PostgreSQL后端，部署在AWS上。
+严格规则：
+1. 只基于【历史摘要】和【新对话】里真实出现的内容做摘要，禁止编造任何人名、关系、项目、技术栈等事实。
+2. 如果【历史摘要】为"（无历史摘要）"且【新对话】中没有提及某类信息（比如用户没说自己的职业、没提项目名），就绝对不要在摘要里写这类信息。
+3. 用通顺的中文 1-3 句话，不要列表、不要 key:value 格式。
+4. 控制在 {max_chars} 字以内。
+5. 去掉寒暄和客套。
 
 【历史摘要】
 {prior}
@@ -95,7 +94,13 @@ def create_llm_summarizer(
     def _get_model():
         if not _model_cache:
             from core.models.factory import create_chat_model
-            _model_cache.append(create_chat_model(name=model_name))
+            raw = create_chat_model(name=model_name)
+            # Tag the summarizer's LLM calls so chat.py's SSE streamer can
+            # distinguish them from the main respond LLM stream (both carry
+            # langgraph_node="respond" because compaction runs inside
+            # respond's before_node hook).
+            tagged = raw.with_config({"tags": ["compaction_summarizer"]})
+            _model_cache.append(tagged)
         return _model_cache[0]
 
     def summarize(prior: str, messages: list[BaseMessage]) -> str:
@@ -190,6 +195,11 @@ class ContextCompactionMiddleware(Middleware):
 
     def before_node(self, state: dict, node_name: str) -> dict:
         messages = state.get("messages", [])
+        logger.warning(
+            "DEBUG ContextCompaction[%s].before_node(%s): %d messages, threshold=%d %s",
+            self.strategy, node_name, len(messages), self.max_messages,
+            "→ TRIGGERING" if len(messages) > self.max_messages else "→ skip",
+        )
         if len(messages) <= self.max_messages:
             return state
 
@@ -297,11 +307,6 @@ class ContextCompactionMiddleware(Middleware):
 
         # Step 5 — roll summary forward in metadata
         metadata["context_summary"] = new_summary
-
-        # Register for echo suppression (SSE handler will filter matching tokens)
-        thread_id = (state.get("metadata") or {}).get("thread_id", "")
-        if thread_id:
-            active_echo_filters[thread_id] = new_summary
 
         # Step 6 — assemble final message list (silent compaction)
         # Summary lives ONLY in metadata. No synthetic messages injected.
