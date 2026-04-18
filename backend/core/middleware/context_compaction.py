@@ -60,30 +60,23 @@ _GREETING_MAX_LEN = 12  # a "你好，帮我..." at 20+ chars is NOT a pure gree
 
 SummarizerFn = Callable[[str, list[BaseMessage]], str]
 
-_SUMMARY_PROMPT_TEMPLATE = """你是上下文压缩助手。将历史摘要和新对话合并，提取关键事实。
+_SUMMARY_PROMPT_TEMPLATE = """你是对话摘要助手。将历史摘要和新对话合并为一段简洁的自然语言总结。
 
-输出格式要求（严格遵守）：
-- 用「key: value」格式，每行一条事实
-- 只保留关键事实（人名、项目名、技术栈、数字、文件名、决策）
-- 丢弃寒暄、客套、重复确认
-- 不要写完整句子，不要写段落
-- 控制在 {max_chars} 字以内
+要求：
+1. 用通顺的中文写 1-3 句话，不要用列表或 key:value 格式
+2. 保留关键信息：人名、项目名、技术细节、重要数字、用户的爱好和偏好
+3. 去掉寒暄和客套
+4. 控制在 {max_chars} 字以内
 
-示例输出：
-用户身份: 张三，前端开发
-项目名: ProjectPhoenix
-前端: React + TypeScript
-后端: FastAPI + PostgreSQL
-部署: AWS
-当前工作: LangGraph 智能体编排
+示例：用户米泽是前端工程师，喜欢小动物，有个女儿叫熊熊。他正在开发ProjectPhoenix项目，使用React+TypeScript前端和FastAPI+PostgreSQL后端，部署在AWS上。
 
-【历史事实】
+【历史摘要】
 {prior}
 
 【新对话】
 {messages}
 
-【合并后的事实清单】"""
+【合并摘要】"""
 
 
 def create_llm_summarizer(
@@ -133,7 +126,24 @@ def create_llm_summarizer(
             messages=messages_text,
         )
         model = _get_model()
-        response = model.invoke([HumanMessage(content=prompt)])
+
+        # Retry with backoff for rate limits (429)
+        import time as _time
+        last_err = None
+        for attempt in range(3):
+            try:
+                response = model.invoke([HumanMessage(content=prompt)])
+                break
+            except Exception as e:
+                last_err = e
+                if "429" in str(e) or "rate" in str(e).lower():
+                    wait = 2 ** attempt  # 1s, 2s, 4s
+                    logger.warning("Summarizer rate-limited, retry in %ds", wait)
+                    _time.sleep(wait)
+                else:
+                    raise
+        else:
+            raise last_err  # type: ignore[misc]
         result = str(response.content or "").strip()
         # Hard cap as safety net — LLMs don't always follow length constraints
         if len(result) > max_chars * 1.5:
