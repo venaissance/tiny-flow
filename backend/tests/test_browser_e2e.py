@@ -126,7 +126,7 @@ def setup_mocks(page: Page, chat_fixture: str | None = None):
 
 def send_message(page: Page, text: str):
     """Type into the input box and press Enter to send."""
-    textarea = page.locator('textarea[placeholder="输入消息..."]')
+    textarea = page.locator('textarea[placeholder="提出一个问题…"]')
     textarea.fill(text)
     textarea.press("Enter")
 
@@ -148,14 +148,14 @@ class TestPageLoad:
     def test_new_chat_button(self, page: Page):
         """Test 2: '新对话' button appears in sidebar."""
         setup_mocks(page)
-        btn = page.locator("button", has_text="新对话").first
+        btn = page.locator("button", has_text="新的探究").first
         expect(btn).to_be_visible(timeout=10_000)
         page.screenshot(path="/tmp/tinyflow-e2e-new-chat.png")
 
     def test_input_box(self, page: Page):
         """Test 3: Textarea input is visible and focusable."""
         setup_mocks(page)
-        textarea = page.locator('textarea[placeholder="输入消息..."]')
+        textarea = page.locator('textarea[placeholder="提出一个问题…"]')
         expect(textarea).to_be_visible(timeout=10_000)
         page.screenshot(path="/tmp/tinyflow-e2e-input.png")
 
