@@ -29,8 +29,8 @@ skills:
 
 compaction:
   strategy: "smart"              # "truncate" (original) or "smart" (Deep Agent SDK)
-  max_messages: 4                # trigger threshold (ultra-low for testing; production: 30)
-  retention_window: 3            # tail messages kept verbatim
+  max_messages: 20               # production threshold
+  retention_window: 10           # tail messages kept verbatim
   summary_model: "glm-4-flash"   # cheap + fast model for summarization
   summary_max_chars: 800         # rolling summary length cap
 

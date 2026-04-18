@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TinyFlow Smart Compaction Report</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e0e0e0; }
+.container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { color: #888; margin-bottom: 40px; font-size: 14px; }
+.score-card { background: #111; border: 1px solid #222; border-radius: 12px; padding: 24px; margin-bottom: 32px; display: flex; gap: 24px; align-items: center; }
+.score-number { font-size: 48px; font-weight: 800; color: #60a5fa; min-width: 80px; text-align: center; }
+.score-detail { flex: 1; }
+.score-detail h3 { font-size: 16px; margin-bottom: 4px; }
+.score-detail p { color: #888; font-size: 13px; }
+.vs-card { background: #111; border: 1px solid #222; border-radius: 12px; padding: 24px; margin-bottom: 32px; }
+.vs-card h3 { font-size: 16px; margin-bottom: 16px; color: #a78bfa; }
+.vs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.vs-table th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #333; color: #888; font-weight: 500; }
+.vs-table td { padding: 8px 12px; border-bottom: 1px solid #1a1a1a; }
+.vs-table .pass { color: #4ade80; }
+.vs-table .fail { color: #f87171; }
+.section-title { font-size: 18px; font-weight: 600; margin: 32px 0 16px; padding-left: 12px; border-left: 3px solid #60a5fa; }
+.round { background: #111; border: 1px solid #222; border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.round-header { font-size: 12px; font-weight: 600; color: #60a5fa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.user-msg { background: #1a2332; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; font-size: 14px; color: #93c5fd; }
+.ai-msg { background: #1a1a2e; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; font-size: 13px; color: #c4b5fd; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.compaction-event { background: linear-gradient(135deg, #1a2a1a, #1a331a); border: 1px solid #2a4a2a; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+.compaction-header { font-size: 14px; font-weight: 600; color: #4ade80; margin-bottom: 4px; }
+.compaction-stats { font-size: 12px; color: #86efac; margin-bottom: 6px; }
+.compaction-preview { font-size: 12px; color: #6ee7b7; background: #0d1f0d; padding: 8px; border-radius: 4px; white-space: pre-wrap; line-height: 1.5; }
+.facts-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.facts-label { font-size: 11px; color: #888; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.badge.found { background: #052e16; color: #4ade80; border: 1px solid #166534; }
+.badge.lost { background: #2a0a0a; color: #f87171; border: 1px solid #7f1d1d; text-decoration: line-through; }
+.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #222; color: #555; font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>TinyFlow Smart Compaction Report</h1>
+    <p class="subtitle">Generated 2026-04-18 15:20 · Model: GLM-5.1 · Summarizer: GLM-4-Flash · 6 rounds of conversation</p>
+
+    <div class="score-card">
+        <div class="score-number">10/10</div>
+        <div class="score-detail">
+            <h3>Smart 策略 · 最终轮次事实保留率</h3>
+            <p>用户在前 5 轮提到 10 个关键事实，第 6 轮要求模型回忆全部。Smart 策略通过滚动摘要保留了 10 个。</p>
+        </div>
+    </div>
+
+    <div class="vs-card">
+        <h3>Smart vs Truncate · Behavior Eval 对照</h3>
+        <table class="vs-table">
+            <tr><th>Eval</th><th>Category</th><th>Truncate</th><th>Smart</th></tr>
+            <tr><td>早期 fact 保留 (q4_forecast_v2.docx)</td><td>retrieval</td><td class="fail">❌ FAIL</td><td class="pass">✅ PASS</td></tr>
+            <tr><td>用户原始意图保留 (非寒暄首句)</td><td>invariance</td><td class="fail">❌ FAIL</td><td class="pass">✅ PASS</td></tr>
+            <tr><td>tool_call/response 对完整性</td><td>tool_use</td><td class="fail">❌ FAIL</td><td class="pass">✅ PASS</td></tr>
+            <tr><td>压缩延迟 &lt; 2s</td><td>efficiency</td><td class="pass">✅ PASS</td><td class="pass">✅ PASS</td></tr>
+            <tr><td>压缩后消息数达标</td><td>efficiency</td><td class="pass">✅ PASS</td><td class="pass">✅ PASS</td></tr>
+            <tr><td colspan="2" style="font-weight:600">E2E (真实 API, GLM-5.1)</td><td style="color:#888">—</td><td class="pass">5/5 ✅</td></tr>
+        </table>
+    </div>
+
+    <div class="section-title">Smart 策略 · 逐轮 Trace</div>
+    
+        <div class="round">
+            <div class="round-header">Round 1</div>
+            <div class="user-msg">👤 你好，我叫张三，是前端开发</div>
+            
+            <div class="ai-msg">🤖 你好张三！👋
+
+我是 TinyFlow 的前端设计助手，专门帮你把界面创意变成可运行的代码。
+
+作为前端开发，你可以让我帮你做这些事：
+
+- 🎨 **落地页 / 个人主页** — 给你自己或项目做一个让人眼前一亮的页面
+- 🧩 **组件原型** — 按钮、卡片、导航、表单… 交互完整，直接可用
+- 📊 **数据可视化面板** — Dashboard、图表、实时数据展示
+- 📱 **完整应用界面** — Todo、笔记、天气、音乐播放器…
+- 🎭 **创意实验** — 粒子效果、交互艺术、3D 场景
+
+给我一个方向就行，比如：
+
+&gt; *&quot;帮我做一个暗色调的个人作品集页面&quot;*
+&gt; *&quot;我需要一个任...</div>
+            <div class="facts-row">
+                <span class="facts-label">事实保留:</span> <span class="badge found">张三</span> <span class="badge lost">ProjectPhoenix</span> <span class="badge lost">React</span> <span class="badge lost">TypeScript</span> <span class="badge lost">FastAPI</span> <span class="badge lost">PostgreSQL</span> <span class="badge lost">AWS</span> <span class="badge lost">LangGraph</span> <span class="badge lost">sessions</span> <span class="badge lost">checkpoints</span>
+            </div>
+        </div>
+
+        <div class="round">
+            <div class="round-header">Round 2</div>
+            <div class="user-msg">👤 我的项目叫 ProjectPhoenix，用 React + TypeScript</div>
+            
+            <div class="ai-msg">🤖 好的张三！ProjectPhoenix — 听名字就很燃 🔥
+
+React + TypeScript 是很扎实的技术栈，我完全适配。我会这样配合你：
+
+---
+
+**代码输出方式**
+- ⚛️ React 函数组件 + Hooks
+- 📝 完整 TypeScript 类型标注
+- 🎨 Tailwind CSS 样式（或你项目用的方案）
+- 📦 组件拆分清晰，方便直接放进项目
+
+**可选配合**
+- 状态管理偏好？`useState` / Zustand / Redux…
+- 路由方案？React Router / Next.js…
+- UI 库偏好？纯手写 / shadcn/ui / Ant ...</div>
+            <div class="facts-row">
+                <span class="facts-label">事实保留:</span> <span class="badge found">张三</span> <span class="badge found">ProjectPhoenix</span> <span class="badge found">React</span> <span class="badge found">TypeScript</span> <span class="badge lost">FastAPI</span> <span class="badge lost">PostgreSQL</span> <span class="badge lost">AWS</span> <span class="badge lost">LangGraph</span> <span class="badge lost">sessions</span> <span class="badge lost">checkpoints</span>
+            </div>
+        </div>
+
+        <div class="round">
+            <div class="round-header">Round 3</div>
+            <div class="user-msg">👤 后端是 FastAPI + PostgreSQL，部署在 AWS 上</div>
+            
+            <div class="compaction-event">
+                <div class="compaction-header">🧠 智能压缩触发</div>
+                <div class="compaction-stats">5 → 6 条消息 · 策略: smart</div>
+                <div class="compaction-preview">用户: 张三，前端开发
+AI: TinyFlow 前端设计助手
+功能: 落地页/个人主页、组件原型、数据可视化面板、完整应用界面</div>
+            </div>
+            <div class="ai-msg">🤖 用户: 张三，前端开发
+AI: TinyFlow 前端设计助手
+功能: 落地页/个人主页、组件原型、数据可视化面板、完整应用界面明白！FastAPI + PostgreSQL + AWS，这是一套非常现代且高效的全栈组合 💯
+
+了解后端技术栈后，我在协作时会做这些适配：
+
+---
+
+**🔄 API 对接层面**
+- FastAPI 自带 OpenAPI/Swagger 文档，我会假设后端接口规范清晰，前端直接按 RESTful 标准请求
+- 代码中用 `axios` 或 `fetch` 封装统一的请求层，处理好 baseURL、错误拦截、loading 状态
+
+**📝 TypeScript 类...</div>
+            <div class="facts-row">
+                <span class="facts-label">事实保留:</span> <span class="badge found">张三</span> <span class="badge found">ProjectPhoenix</span> <span class="badge found">React</span> <span class="badge found">TypeScript</span> <span class="badge found">FastAPI</span> <span class="badge found">PostgreSQL</span> <span class="badge found">AWS</span> <span class="badge lost">LangGraph</span> <span class="badge lost">sessions</span> <span class="badge lost">checkpoints</span>
+            </div>
+        </div>
+
+        <div class="round">
+            <div class="round-header">Round 4</div>
+            <div class="user-msg">👤 我们最近在做 LangGraph 的智能体编排功能</div>
+            
+            <div class="compaction-event">
+                <div class="compaction-header">🧠 智能压缩触发</div>
+                <div class="compaction-stats">7 → 6 条消息 · 策略: smart</div>
+                <div class="compaction-preview">用户身份: 张三，前端开发
+项目名: ProjectPhoenix
+技术栈: React + TypeScript
+AI角色: TinyFlow 前端设计助手
+功能: 落地页、组件原型、数据可视化、完整应用界面
+AI配合: React 函数组件 + Hooks, TypeScript 类型标注, Tailwind CSS 样式</div>
+            </div>
+            <div class="ai-msg">🤖 用户身份: 张三，前端开发
+项目名: ProjectPhoenix
+技术栈: React + TypeScript
+AI角色: TinyFlow 前端设计助手
+功能: 落地页、组件原型、数据可视化、完整应用界面
+AI配合: React 函数组件 + Hooks, TypeScript 类型标注, Tailwind CSS 样式哇，LangGraph 智能体编排！这可是目前 AI 应用层最硬核、最火的方向了，而且这个需求和我的名字 **TinyFlow** 简直是绝配！😎
+
+做智能体编排，核心就是**把复杂的代码逻辑（DAG/状态机）转化为可视化的节点和连线**。基于 React + TS 的技...</div>
+            <div class="facts-row">
+                <span class="facts-label">事实保留:</span> <span class="badge found">张三</span> <span class="badge found">ProjectPhoenix</span> <span class="badge found">React</span> <span class="badge found">TypeScript</span> <span class="badge found">FastAPI</span> <span class="badge found">PostgreSQL</span> <span class="badge lost">AWS</span> <span class="badge found">LangGraph</span> <span class="badge lost">sessions</span> <span class="badge lost">checkpoints</span>
+            </div>
+        </div>
+
+        <div class="round">
+            <div class="round-header">Round 5</div>
+            <div class="user-msg">👤 数据库表设计用了 8 张表，核心是 sessions 和 checkpoints</div>
+            
+            <div class="compaction-event">
+                <div class="compaction-header">🧠 智能压缩触发</div>
+                <div class="compaction-stats">9 → 6 条消息 · 策略: smart</div>
+                <div class="compaction-preview">用户身份: 张三，前端开发
+项目名: ProjectPhoenix
+技术栈: React + TypeScript, FastAPI + PostgreSQL, AWS
+AI角色: TinyFlow 前端设计助手
+工作内容: 落地页/个人主页、组件原型、数据可视化面板、完整应用界面
+代码输出方式: React 函数组件 + Hooks, TypeScript 类型标注, Tailwind CSS </div>
+            </div>
+            <div class="ai-msg">🤖 用户身份: 张三，前端开发
+项目名: ProjectPhoenix
+技术栈: React + TypeScript, FastAPI + PostgreSQL, AWS
+AI角色: TinyFlow 前端设计助手
+工作内容: 落地页/个人主页、组件原型、数据可视化面板、完整应用界面
+代码输出方式: React 函数组件 + Hooks, TypeScript 类型标注, Tailwind CSS 样式
+API对接层面: FastAPI, OpenAPI/Swagger, RESTful 标准请求太棒了，`sessions` 和 `checkpoints` 这两张表可以说是 LangGraph ...</div>
+            <div class="facts-row">
+                <span class="facts-label">事实保留:</span> <span class="badge found">张三</span> <span class="badge found">ProjectPhoenix</span> <span class="badge found">React</span> <span class="badge found">TypeScript</span> <span class="badge found">FastAPI</span> <span class="badge found">PostgreSQL</span> <span class="badge found">AWS</span> <span class="badge found">LangGraph</span> <span class="badge found">sessions</span> <span class="badge found">checkpoints</span>
+            </div>
+        </div>
+
+        <div class="round">
+            <div class="round-header">Round 6</div>
+            <div class="user-msg">👤 你能帮我回忆一下我之前说了什么吗？把所有关键信息列出来</div>
+            
+            <div class="compaction-event">
+                <div class="compaction-header">🧠 智能压缩触发</div>
+                <div class="compaction-stats">11 → 6 条消息 · 策略: smart</div>
+                <div class="compaction-preview">用户身份: 张三，前端开发
+项目名: ProjectPhoenix
+技术栈: React + TypeScript，FastAPI + PostgreSQL，AWS
+后端部署: AWS
+当前工作: LangGraph 智能体编排
+前端设计助手: TinyFlow
+前端模块: 画布区，核心交互</div>
+            </div>
+            <div class="ai-msg">🤖 用户身份: 张三，前端开发
+项目名: ProjectPhoenix
+技术栈: React + TypeScript，FastAPI + PostgreSQL，AWS
+后端部署: AWS
+当前工作: LangGraph 智能体编排
+前端设计助手: TinyFlow
+前端模块: 画布区，核心交互张三你好！没问题，我帮你把目前对话中涉及到的所有关键信息梳理出来：
+
+**1. 个人身份**
+*   **姓名**：张三
+*   **岗位**：前端开发
+
+**2. 项目概况**
+*   **项目名称**：ProjectPhoenix
+*   **核心技术栈**：
+    *   前端：React + Ty...</div>
+            <div class="facts-row">
+                <span class="facts-label">事实保留:</span> <span class="badge found">张三</span> <span class="badge found">ProjectPhoenix</span> <span class="badge found">React</span> <span class="badge found">TypeScript</span> <span class="badge found">FastAPI</span> <span class="badge found">PostgreSQL</span> <span class="badge found">AWS</span> <span class="badge found">LangGraph</span> <span class="badge found">sessions</span> <span class="badge found">checkpoints</span>
+            </div>
+        </div>
+
+    <div class="footer">
+        TinyFlow · Smart Compaction Experiment · Branch: experiment/agent-evals-compaction
+    </div>
+</div>
+</body>
+</html>
